@@ -90,14 +90,14 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            thumbHeight = (height *self.options.scale)
 
            # make the thumbnails in a scratch image
-           scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight)).autorelease()
+           scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
            scratch.lockFocus()
            NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
            thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
            clipRect = NSMakeRect(0.0, thumbHeight-self.options.clipheight, self.options.clipwidth, self.options.clipheight)
            bitmapdata.drawInRect_(thumbRect)
-           thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect).autorelease()
-           clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect).autorelease()
+           thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
+           clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
            scratch.unlockFocus()
 
            # save the thumbnails as pngs 

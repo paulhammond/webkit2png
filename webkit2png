@@ -127,7 +127,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
             self.resizeWebview(view)
 
             URL = frame.dataSource().initialRequest().URL().absoluteString()
-            filename = self.makeFilename(URL, options) 
+            filename = self.makeFilename(URL, self.options) 
 
             bitmapdata = self.captureView(view)  
             self.saveImages(bitmapdata,filename,self.options)

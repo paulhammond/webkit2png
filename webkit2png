@@ -22,6 +22,7 @@ __version__ = "0.4"
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
                 
 import sys
+import optparse
 
 try:
   import Foundation
@@ -33,7 +34,6 @@ except ImportError:
   sys.exit() 
 
 
-from optparse import OptionParser
 
 class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up
@@ -175,7 +175,7 @@ examples:
 %prog -                             # screengrab urls from stdin
 %prog -h | less                     # full documentation"""
 
-    cmdparser = OptionParser(usage, version=("webkit2png "+__version__))
+    cmdparser = optparse.OptionParser(usage,version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")
@@ -203,6 +203,8 @@ examples:
        help="include date in filename")
     cmdparser.add_option("-D", "--dir",type="string",default="./",
        help="directory to place images into")
+    cmdparser.add_option("--debug", action="store_true",
+       help=optparse.SUPPRESS_HELP)
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_usage()
@@ -234,11 +236,12 @@ examples:
     AppKit.NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = Foundation.NSMakeRect(-16000,-16000,100,100)
+    rect = Foundation.NSMakeRect(0,0,100,100)
     win = AppKit.NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, 
             AppKit.NSBorderlessWindowMask, 2, 0)
-
+    if options.debug:
+      win.orderFrontRegardless()
     # create a webview object
     webview = WebKit.WebView.alloc()
     webview.initWithFrame_(rect)

@@ -44,7 +44,9 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def makeFilename(self,URL,options):
        # make the filename
-       if options.md5:
+       if options.filename:
+         filename = options.filename
+       elif options.md5:
          try:
                 import md5
          except ImportError:
@@ -166,6 +168,8 @@ examples:
        help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option("-m", "--md5", action="store_true",
        help="use md5 hash for filename (like del.icio.us)")
+    cmdparser.add_option("-o", "--filename", type="string",default="",
+       metavar="NAME", help="save images as NAME.png,NAME-thumb.png etc")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     cmdparser.add_option("-D", "--dir",type="string",default="./",
@@ -174,6 +178,10 @@ examples:
     if len(args) == 0:
         cmdparser.print_help()
         return
+    if options.filename:
+        if len(args) != 1 or args[0] == "-":
+          print "--filename option requires exactly one url"
+          return
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
 

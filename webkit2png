@@ -39,7 +39,7 @@ class AppDelegate (NSObject):
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
     def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
-        print "Something went wrong" 
+        print " ... something went wrong" 
         self.getURL()
 
     def makeFilename(self,URL,options):
@@ -84,13 +84,15 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
     def getURL(self):
-        if self.urls:
-            url = self.urls.pop(0);
-            print "Fetching", url, "..."
-            self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
+        if self.options.stdin:
+            url = sys.stdin.readline().rstrip()
+            if not url: NSApplication.sharedApplication().terminate_(None)
+        elif self.urls:
+            url = self.urls.pop(0)
         else:
             NSApplication.sharedApplication().terminate_(None)
-     
+        print "Fetching", url, "..."
+        self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
  
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,sender,frame):
@@ -116,6 +118,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            rect = NSMakeRect(-16000.0,-16000.0,self.options.initWidth,self.options.initHeight)
            view.window().setContentSize_((self.options.initWidth,self.options.initHeight))
            view.setFrame_(rect)
+           print " ... done"
            self.getURL()
 
 
@@ -139,9 +142,13 @@ def main():
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     (options, args) = cmdparser.parse_args()
+    # work out if we're in stdin mode
+    # TODO: clean this code up
+    options.stdin = 0
     if len(args) == 0:
-      cmdparser.print_help()
-      return
+      # TODO: make stdin help text clearer, with hint you can --help
+      print "enter one url per line, blank line to end"
+      options.stdin = 1
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
 

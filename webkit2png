@@ -107,6 +107,7 @@ def main():
 
     # parse the command line
     cmdparser = OptionParser("usage: %prog [options] http://www.example.com", version=("webkit2png "+__version__))
+    # TODO: add quiet/verbose options
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")
     cmdparser.add_option("-H", "--height",type="float",default=600.0,

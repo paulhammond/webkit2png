@@ -61,8 +61,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          filename = now + "-" + filename
        return filename 
 
-    def makeImages(self,bitmapdata,URL,options):
-        filename = self.makeFilename(URL, options) 
+    def saveImages(self,bitmapdata,filename,options):
         # save the fullsize png
         bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
 
@@ -130,8 +129,8 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            bitmapdata = self.captureView(view)  
            # work out what URL we just made a screenshot of
            URL = frame.dataSource().initialRequest().URL().absoluteString()
-           
-           self.makeImages(bitmapdata,URL,self.options)
+           filename = self.makeFilename(URL, options) 
+           self.saveImages(bitmapdata,filename,self.options)
 
            print " ... done"
            self.getURL(webview)

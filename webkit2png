@@ -167,9 +167,12 @@ def main():
     usage = """%prog [options] [http://example.net/ ...]
 
 examples:
-%prog http://google.com/                 # screengrab google
+%prog http://google.com/            # screengrab google
 %prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
-%prog -                                  # screengrab urls from stdin"""
+%prog -T http://google.com/         # just the thumbnail screengrab
+%prog -TF http://google.com/        # just thumbnail and fullsize grab
+%prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
+%prog -                             # screengrab urls from stdin"""
 
     cmdparser = OptionParser(usage, version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options

@@ -97,10 +97,20 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         else:
             NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
+        self.resetWebview(webview)
         webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
+     
+    def resetWebview(self,webview):
+        rect = NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
+        webview.window().setContentSize_((self.options.initWidth,self.options.initHeight))
+        webview.setFrame_(rect)
+    
+    def resizeWebview(self,view):
+        view.window().setContentSize_(view.bounds().size)
+        view.setFrame_(view.bounds())
  
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,webview,frame):
@@ -108,10 +118,8 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
        if (frame == webview.mainFrame()):
            # resize the window and content to the natural size of the page
            view = frame.frameView().documentView()
-           view.window().display()
-           view.window().setContentSize_(view.bounds().size)
-           view.setFrame_(view.bounds())
-           
+           self.resizeWebview(view)
+ 
            # take a screenshot
            view.lockFocus()
            bitmapdata = NSBitmapImageRep.alloc()
@@ -123,9 +131,6 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            
            self.makeImages(bitmapdata,URL,self.options)
 
-           rect = NSMakeRect(-16000.0,-16000.0,self.options.initWidth,self.options.initHeight)
-           view.window().setContentSize_((self.options.initWidth,self.options.initHeight))
-           view.setFrame_(rect)
            print " ... done"
            self.getURL(webview)
 
@@ -181,7 +186,7 @@ examples:
     NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = NSMakeRect(-16000.0,-16000.0,options.initWidth,options.initHeight)
+    rect = NSMakeRect(-16000,-16000,100,100)
     win = NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
 

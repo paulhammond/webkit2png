@@ -30,7 +30,6 @@ from optparse import OptionParser
 import re
 import os
 import md5
-objc.setVerbose(1) ### DEBUG
 
 class AppDelegate (NSObject):
    # what happens when the app starts up

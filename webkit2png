@@ -94,9 +94,9 @@ def main():
     # parse the command line
     cmdparser = OptionParser("usage: %prog [options] http://www.example.com", version=("webkit2png "+__version__))
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
-       help="initial width of content area (default: 800)")
+       help="initial (and minimum) width of browser (default: 800)")
     cmdparser.add_option("-H", "--height",type="float",default=600.0,
-       help="initial height of content area (default: 600)")
+       help="initial (and minimum) height of browser (default: 600)")
     cmdparser.add_option("--clipwidth",type="float",default=200.0,
        help="width of clipped thumbnail (default: 200)")
     cmdparser.add_option("--clipheight",type="float",default=150.0,
@@ -107,6 +107,8 @@ def main():
     if len(args) != 1:
       cmdparser.print_help()
       return
+    if options.scale == 0:
+      cmdparser.error("scale cannot be zero")
 
     # grab the url
     URL=args[0]
@@ -114,6 +116,15 @@ def main():
     filename = re.sub('\W','',URL);
     filename = re.sub('^http','',filename);
 
+    # work out the initial size of the browser window
+    #  (this might need to be larger so clipped image is right size)
+    initWidth = (options.clipwidth / options.scale)
+    initHeight = (options.clipheight / options.scale)
+    if options.width>initWidth:
+       initWidth = options.width
+    if options.height>initHeight:
+       initHeight = options.height
+      
     app = NSApplication.sharedApplication()
     
     # create an app delegate
@@ -121,7 +132,7 @@ def main():
     NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = NSMakeRect(-16000.0,-16000.0,options.width,options.height)
+    rect = NSMakeRect(-16000.0,-16000.0,initWidth,initHeight)
     win = NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
 

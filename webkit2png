@@ -29,6 +29,7 @@ import sys
 from optparse import OptionParser
 import re
 import os
+import md5
 
 class AppDelegate (NSObject):
     # what happens when the app starts up
@@ -172,13 +173,7 @@ examples:
         cmdparser.print_help()
         return
     if options.scale == 0:
-        cmdparser.error("scale cannot be zero")
-    if options.md5:
-        try:
-            import md5
-        except ImportError:
-            print "--md5 requires python md5 library"
-            return 1
+      cmdparser.error("scale cannot be zero")
 
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
@@ -216,7 +211,5 @@ examples:
     
     app.run()    
 
-if __name__ == '__main__':
-    sys.exit(main())
- 
+if __name__ == '__main__' : main()
 

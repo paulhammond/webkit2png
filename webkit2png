@@ -35,11 +35,7 @@ objc.setVerbose(1) ### DEBUG
 class AppDelegate (NSObject):
    # what happens when the app starts up
    def applicationDidFinishLaunching_(self, aNotification):
-        if self.URL != None:
-          print "Fetching", self.URL, "..."
-          self.webView.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(self.URL)))
-        else:
-          NSApplication.sharedApplication().terminate_(None)
+      self.webview.frameLoadDelegate().getURL()
 
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
@@ -87,7 +83,16 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         # save the thumbnails as pngs 
         thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
         clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
-    
+
+    def getURL(self):
+        print "next!"
+        if self.url != None:
+            print "Fetching", self.url, "..."
+            self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(self.url)))
+        else:
+            NSApplication.sharedApplication().terminate_(None)
+     
+ 
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,sender,frame):
        # don't care about subframes
@@ -171,12 +176,13 @@ def main():
     
     # create a LoadDelegate
     loaddelegate = WebkitLoad.alloc().init()
+    loaddelegate.webview = webview
     loaddelegate.options = options
+    loaddelegate.url = URL
     webview.setFrameLoadDelegate_(loaddelegate)
     
     # give the appdelegate some info
-    delegate.webView = webview
-    delegate.URL = URL
+    delegate.webview = webview
     
     win.display()
     app.run()    

@@ -209,6 +209,8 @@ examples:
        help="directory to place images into")
     cmdparser.add_option("--delay",type="float",default=0,
        help="delay between page load finishing and screenshot")
+    cmdparser.add_option("--noimages", action="store_true",
+       help="don't load images")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     (options, args) = cmdparser.parse_args()
@@ -253,6 +255,10 @@ examples:
     webview.initWithFrame_(rect)
     # turn off scrolling so the content is actually x wide and not x-15
     webview.mainFrame().frameView().setAllowsScrolling_(objc.NO)
+
+    webview.setPreferencesIdentifier_('webkit2png')
+    webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
+
     # add the webview to the window
     win.setContentView_(webview)
     

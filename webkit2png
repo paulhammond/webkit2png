@@ -172,7 +172,8 @@ examples:
 %prog -T http://google.com/         # just the thumbnail screengrab
 %prog -TF http://google.com/        # just thumbnail and fullsize grab
 %prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
-%prog -                             # screengrab urls from stdin"""
+%prog -                             # screengrab urls from stdin
+%prog -h | less                     # full documentation"""
 
     cmdparser = OptionParser(usage, version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
@@ -204,7 +205,7 @@ examples:
        help="directory to place images into")
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
-        cmdparser.print_help()
+        cmdparser.print_usage()
         return
     if options.filename:
         if len(args) != 1 or args[0] == "-":

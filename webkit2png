@@ -51,9 +51,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          except ImportError:
                 print "--md5 requires python md5 library"
                 NSApplication.sharedApplication().terminate_(None)
-         md5obj = md5.md5()
-         md5obj.update(URL)
-         filename =  md5obj.hexdigest()
+         filename = md5.new(URL).hexdigest()
        else:
          import re
          filename = re.sub('\W','',URL);

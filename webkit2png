@@ -67,28 +67,32 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def saveImages(self,bitmapdata,filename,options):
         # save the fullsize png
-        bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
+        if options.fullsize:
+            bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
 
-        # work out how big the thumbnail is
-        width = bitmapdata.pixelsWide()
-        height = bitmapdata.pixelsHigh()
-        thumbWidth = (width * options.scale)
-        thumbHeight = (height * options.scale)
+        if options.thumb or options.clipped:
+            # work out how big the thumbnail is
+            width = bitmapdata.pixelsWide()
+            height = bitmapdata.pixelsHigh()
+            thumbWidth = (width * options.scale)
+            thumbHeight = (height * options.scale)
 
-        # make the thumbnails in a scratch image
-        scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
-        scratch.lockFocus()
-        NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
-        thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
-        clipRect = NSMakeRect(0.0, thumbHeight-options.clipheight, options.clipwidth, options.clipheight)
-        bitmapdata.drawInRect_(thumbRect)
-        thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
-        clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
-        scratch.unlockFocus()
+            # make the thumbnails in a scratch image
+            scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
+            scratch.lockFocus()
+            NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
+            thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
+            clipRect = NSMakeRect(0.0, thumbHeight-options.clipheight, options.clipwidth, options.clipheight)
+            bitmapdata.drawInRect_(thumbRect)
+            thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
+            clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
+            scratch.unlockFocus()
            
-        # save the thumbnails as pngs 
-        thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
-        clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
+            # save the thumbnails as pngs 
+            if options.thumb:
+                thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
+            if options.clipped:
+                clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
     def getURL(self,webview):
         if self.urls:
@@ -170,6 +174,12 @@ examples:
        help="use md5 hash for filename (like del.icio.us)")
     cmdparser.add_option("-o", "--filename", type="string",default="",
        metavar="NAME", help="save images as NAME.png,NAME-thumb.png etc")
+    cmdparser.add_option("-F", "--fullsize", action="store_true",
+       help="only create fullsize screenshot")
+    cmdparser.add_option("-T", "--thumb", action="store_true",
+       help="only create thumbnail sreenshot")
+    cmdparser.add_option("-C", "--clipped", action="store_true",
+       help="only create clipped thumbnail screenshot")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     cmdparser.add_option("-D", "--dir",type="string",default="./",
@@ -184,7 +194,11 @@ examples:
           return
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
-
+    # make sure we're outputing something
+    if not (options.fullsize or options.thumb or options.clipped):
+      options.fullsize = True
+      options.thumb = True
+      options.clipped = True
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
     options.initWidth = (options.clipwidth / options.scale)

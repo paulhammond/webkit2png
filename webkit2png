@@ -29,6 +29,7 @@ import sys
 from optparse import OptionParser
 import re
 import os
+import md5
 objc.setVerbose(1) ### DEBUG
 
 class AppDelegate (NSObject):
@@ -103,6 +104,8 @@ def main():
        help="height of clipped thumbnail (default: 150)")
     cmdparser.add_option("-s", "--scale",type="float",default=0.25,
        help="scale factor for thumbnails (default: 0.25)")
+    cmdparser.add_option("-m", "--md5", action="store_true",
+       help="use md5 has for filename")
     (options, args) = cmdparser.parse_args()
     if len(args) != 1:
       cmdparser.print_help()
@@ -113,8 +116,13 @@ def main():
     # grab the url
     URL=args[0]
     # make the filename
-    filename = re.sub('\W','',URL);
-    filename = re.sub('^http','',filename);
+    if (options.md5):
+      md5obj = md5.md5()
+      md5obj.update(URL)
+      filename =  md5obj.hexdigest()
+    else:
+      filename = re.sub('\W','',URL);
+      filename = re.sub('^http','',filename);
 
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)

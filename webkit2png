@@ -40,8 +40,8 @@ class AppDelegate (NSObject):
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
     def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
-       print "Something went wrong" 
-       NSApplication.sharedApplication().terminate_(None)
+        print "Something went wrong" 
+        self.getURL()
 
     def makeFilename(self,URL,options):
        # make the filename
@@ -85,10 +85,10 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
     def getURL(self):
-        print "next!"
-        if self.url != None:
-            print "Fetching", self.url, "..."
-            self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(self.url)))
+        if self.urls:
+            url = self.urls.pop(0);
+            print "Fetching", url, "..."
+            self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
         else:
             NSApplication.sharedApplication().terminate_(None)
      
@@ -114,13 +114,16 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            
            self.makeImages(bitmapdata,URL,self.options)
 
-           NSApplication.sharedApplication().terminate_(None)
+           rect = NSMakeRect(-16000.0,-16000.0,self.options.initWidth,self.options.initHeight)
+           view.window().setContentSize_((self.options.initWidth,self.options.initHeight))
+           view.setFrame_(rect)
+           self.getURL()
 
 
 def main():
 
     # parse the command line
-    cmdparser = OptionParser("usage: %prog [options] http://www.example.com", version=("webkit2png "+__version__))
+    cmdparser = OptionParser("usage: %prog [options] http://www.example.com/ [...]", version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")
@@ -137,23 +140,20 @@ def main():
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     (options, args) = cmdparser.parse_args()
-    if len(args) != 1:
+    if len(args) == 0:
       cmdparser.print_help()
       return
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
 
-    # grab the url
-    URL=args[0]
-
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
-    initWidth = (options.clipwidth / options.scale)
-    initHeight = (options.clipheight / options.scale)
-    if options.width>initWidth:
-       initWidth = options.width
-    if options.height>initHeight:
-       initHeight = options.height
+    options.initWidth = (options.clipwidth / options.scale)
+    options.initHeight = (options.clipheight / options.scale)
+    if options.width>options.initWidth:
+       options.initWidth = options.width
+    if options.height>options.initHeight:
+       options.initHeight = options.height
       
     app = NSApplication.sharedApplication()
     
@@ -162,7 +162,7 @@ def main():
     NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = NSMakeRect(-16000.0,-16000.0,initWidth,initHeight)
+    rect = NSMakeRect(-16000.0,-16000.0,options.initWidth,options.initHeight)
     win = NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
 
@@ -178,7 +178,7 @@ def main():
     loaddelegate = WebkitLoad.alloc().init()
     loaddelegate.webview = webview
     loaddelegate.options = options
-    loaddelegate.url = URL
+    loaddelegate.urls = args
     webview.setFrameLoadDelegate_(loaddelegate)
     
     # give the appdelegate some info

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# webkit2pdf - makes screenshots of webpages
-# http://www.paranoidfish.org/projects/webkit2pdf
+# webkit2png - makes screenshots of webpages
+# http://www.paranoidfish.org/projects/webkit2png
 __version__ = "0.2"
 
 # $Id$

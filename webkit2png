@@ -123,7 +123,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 def main():
 
     # parse the command line
-    cmdparser = OptionParser("usage: %prog [options] http://www.example.com/ [...]", version=("webkit2png "+__version__))
+    cmdparser = OptionParser("usage: %prog [options] http://example.com/ [http://example.net/ ...]", version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")

@@ -27,7 +27,6 @@ from AppKit import *
 import objc
 import sys
 from optparse import OptionParser
-import os
 
 class AppDelegate (NSObject):
     # what happens when the app starts up
@@ -63,6 +62,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          import time
          now = time.strftime("%Y%m%d")
          filename = now + "-" + filename
+       import os
        dir = os.path.abspath(os.path.expanduser(options.dir))
        return os.path.join(dir,filename)
 

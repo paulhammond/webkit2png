@@ -34,16 +34,16 @@ import md5
 class AppDelegate (NSObject):
    # what happens when the app starts up
    def applicationDidFinishLaunching_(self, aNotification):
-      self.webview.frameLoadDelegate().getURL()
+      self.webview.frameLoadDelegate().getURL(self.webview)
 
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
-    def webView_didFailLoadWithError_forFrame_(self,sender,error,frame):
+    def webView_didFailLoadWithError_forFrame_(self,webview,error,frame):
         print " ... something went wrong" 
-        self.getURL()
-    def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
+        self.getURL(webview)
+    def webView_didFailProvisionalLoadWithError_forFrame_(self,webview,error,frame):
         print " ... something went wrong" 
-        self.getURL()
+        self.getURL(webview)
 
     def makeFilename(self,URL,options):
        # make the filename
@@ -86,7 +86,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
         clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
-    def getURL(self):
+    def getURL(self,webview):
         if self.urls:
             if self.urls[0] == '-':
                 url = sys.stdin.readline().rstrip()
@@ -96,15 +96,15 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         else:
             NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
-        self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
-        if not self.webview.mainFrame().provisionalDataSource():
+        webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
+        if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
-            self.getURL()
+            self.getURL(webview)
  
     # what happens when the page has finished loading
-    def webView_didFinishLoadForFrame_(self,sender,frame):
+    def webView_didFinishLoadForFrame_(self,webview,frame):
        # don't care about subframes
-       if (frame == sender.mainFrame()):
+       if (frame == webview.mainFrame()):
            # resize the window and content to the natural size of the page
            view = frame.frameView().documentView()
            view.window().display()
@@ -126,7 +126,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            view.window().setContentSize_((self.options.initWidth,self.options.initHeight))
            view.setFrame_(rect)
            print " ... done"
-           self.getURL()
+           self.getURL(webview)
 
 
 def main():
@@ -194,7 +194,6 @@ examples:
     
     # create a LoadDelegate
     loaddelegate = WebkitLoad.alloc().init()
-    loaddelegate.webview = webview
     loaddelegate.options = options
     loaddelegate.urls = args
     webview.setFrameLoadDelegate_(loaddelegate)

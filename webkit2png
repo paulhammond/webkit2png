@@ -84,11 +84,12 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
     def getURL(self):
-        if self.options.stdin:
-            url = sys.stdin.readline().rstrip()
-            if not url: NSApplication.sharedApplication().terminate_(None)
-        elif self.urls:
-            url = self.urls.pop(0)
+        if self.urls:
+            if self.urls[0] == '-':
+                url = sys.stdin.readline().rstrip()
+                if not url: NSApplication.sharedApplication().terminate_(None)
+            else: 
+                url = self.urls.pop(0)
         else:
             NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
@@ -125,7 +126,14 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 def main():
 
     # parse the command line
-    cmdparser = OptionParser("usage: %prog [options] http://example.com/ [http://example.net/ ...]", version=("webkit2png "+__version__))
+    usage = """%prog [options] [http://example.net/ ...]
+
+examples:
+%prog http://google.com/                 # screengrab google
+%prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
+%prog -                                  # screengrab urls from stdin"""
+
+    cmdparser = OptionParser(usage, version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")
@@ -142,13 +150,9 @@ def main():
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     (options, args) = cmdparser.parse_args()
-    # work out if we're in stdin mode
-    # TODO: clean this code up
-    options.stdin = 0
     if len(args) == 0:
-      # TODO: make stdin help text clearer, with hint you can --help
-      print "enter one url per line, blank line to end"
-      options.stdin = 1
+        cmdparser.print_help()
+        return
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
 
@@ -194,3 +198,4 @@ def main():
     app.run()    
 
 if __name__ == '__main__' : main()
+

@@ -108,6 +108,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         webview.setFrame_(rect)
     
     def resizeWebview(self,view):
+        view.window().display()
         view.window().setContentSize_(view.bounds().size)
         view.setFrame_(view.bounds())
 

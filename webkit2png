@@ -75,7 +75,11 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            else:
              filename = re.sub('\W','',URL);
              filename = re.sub('^http','',filename);
-           
+           if self.options.datestamp:
+             import time
+             now = time.strftime("%Y%m%d")
+             filename = now + "-" + filename
+
            # save the fullsize png
            bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
 
@@ -121,6 +125,8 @@ def main():
        help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option("-m", "--md5", action="store_true",
        help="use md5 has for filename")
+    cmdparser.add_option("-d", "--datestamp", action="store_true",
+       help="include date in filename")
     (options, args) = cmdparser.parse_args()
     if len(args) != 1:
       cmdparser.print_help()

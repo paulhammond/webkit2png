@@ -2,7 +2,7 @@
 
 # webkit2png - makes screenshots of webpages
 # http://www.paranoidfish.org/projects/webkit2png
-__version__ = "0.3"
+__version__ = "0.3.1"
 
 # $Id$
 

@@ -21,19 +21,19 @@ __version__ = "0.3.1"
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-from Foundation import *
+import Foundation
 import WebKit
-from AppKit import *
+import AppKit
 import objc
 from optparse import OptionParser
 
-class AppDelegate (NSObject):
+class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up
     def applicationDidFinishLaunching_(self, aNotification):
         webview = aNotification.object().windows()[0].contentView()
         webview.frameLoadDelegate().getURL(webview)
 
-class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
+class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self,webview,error,frame):
         print " ... something went wrong" 
@@ -51,7 +51,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 import md5
          except ImportError:
                 print "--md5 requires python md5 library"
-                NSApplication.sharedApplication().terminate_(None)
+                AppKit.NSApplication.sharedApplication().terminate_(None)
          filename = md5.new(URL).hexdigest()
        else:
          import re
@@ -68,7 +68,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def saveImages(self,bitmapdata,filename,options):
         # save the fullsize png
         if options.fullsize:
-            bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
+            bitmapdata.representationUsingType_properties_(AppKit.NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
 
         if options.thumb or options.clipped:
             # work out how big the thumbnail is
@@ -78,41 +78,49 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
             thumbHeight = (height * options.scale)
 
             # make the thumbnails in a scratch image
-            scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
+            scratch = AppKit.NSImage.alloc().initWithSize_(
+                    Foundation.NSMakeSize(thumbWidth,thumbHeight))
             scratch.lockFocus()
-            NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
-            thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
-            clipRect = NSMakeRect(0.0, thumbHeight-options.clipheight, options.clipwidth, options.clipheight)
+            AppKit.NSGraphicsContext.currentContext().setImageInterpolation_(
+                    AppKit.NSImageInterpolationHigh)
+            thumbRect = Foundation.NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
+            clipRect = Foundation.NSMakeRect(0.0, 
+                    thumbHeight-options.clipheight, 
+                    options.clipwidth, options.clipheight)
             bitmapdata.drawInRect_(thumbRect)
-            thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
-            clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
+            thumbOutput = AppKit.NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
+            clipOutput = AppKit.NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
             scratch.unlockFocus()
            
             # save the thumbnails as pngs 
             if options.thumb:
-                thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
+                thumbOutput.representationUsingType_properties_(
+                        AppKit.NSPNGFileType,None
+                    ).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
             if options.clipped:
-                clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
+                clipOutput.representationUsingType_properties_(
+                        AppKit.NSPNGFileType,None
+                    ).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
     def getURL(self,webview):
         if self.urls:
             if self.urls[0] == '-':
                 import sys
                 url = sys.stdin.readline().rstrip()
-                if not url: NSApplication.sharedApplication().terminate_(None)
+                if not url: AppKit.NSApplication.sharedApplication().terminate_(None)
             else: 
                 url = self.urls.pop(0)
         else:
-            NSApplication.sharedApplication().terminate_(None)
+            AppKit.NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
         self.resetWebview(webview)
-        webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
+        webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
      
     def resetWebview(self,webview):
-        rect = NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
+        rect = Foundation.NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
         webview.window().setContentSize_((self.options.initWidth,self.options.initHeight))
         webview.setFrame_(rect)
     
@@ -123,7 +131,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def captureView(self,view):
         view.lockFocus()
-        bitmapdata = NSBitmapImageRep.alloc()
+        bitmapdata = AppKit.NSBitmapImageRep.alloc()
         bitmapdata.initWithFocusedViewRect_(view.bounds())
         view.unlockFocus()
         return bitmapdata
@@ -208,16 +216,17 @@ examples:
     if options.height>options.initHeight:
        options.initHeight = options.height
       
-    app = NSApplication.sharedApplication()
+    app = AppKit.NSApplication.sharedApplication()
     
     # create an app delegate
     delegate = AppDelegate.alloc().init()
-    NSApp().setDelegate_(delegate)
+    AppKit.NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = NSMakeRect(-16000,-16000,100,100)
-    win = NSWindow.alloc()
-    win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
+    rect = Foundation.NSMakeRect(-16000,-16000,100,100)
+    win = AppKit.NSWindow.alloc()
+    win.initWithContentRect_styleMask_backing_defer_ (rect, 
+            AppKit.NSBorderlessWindowMask, 2, 0)
 
     # create a webview object
     webview = WebKit.WebView.alloc()

@@ -58,7 +58,6 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            # take a screenshot
            view.lockFocus()
            bitmapdata = NSBitmapImageRep.alloc()
-           print str(view.bounds())
            bitmapdata.initWithFocusedViewRect_(view.bounds())
            view.unlockFocus()
            
@@ -121,7 +120,6 @@ def main():
     NSApp().setDelegate_(delegate)
 
     # create a window
-    print type(options.width)
     rect = NSMakeRect(-16000.0,-16000.0,options.width,options.height)
     win = NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)

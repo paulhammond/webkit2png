@@ -191,7 +191,7 @@ examples:
     cmdparser.add_option("-m", "--md5", action="store_true",
        help="use md5 hash for filename (like del.icio.us)")
     cmdparser.add_option("-o", "--filename", type="string",default="",
-       metavar="NAME", help="save images as NAME.png,NAME-thumb.png etc")
+       metavar="NAME", help="save images as NAME-full.png,NAME-thumb.png etc")
     cmdparser.add_option("-F", "--fullsize", action="store_true",
        help="only create fullsize screenshot")
     cmdparser.add_option("-T", "--thumb", action="store_true",

@@ -27,7 +27,6 @@ from AppKit import *
 import objc
 import sys
 from optparse import OptionParser
-import re
 import os
 
 class AppDelegate (NSObject):
@@ -57,6 +56,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          md5obj.update(URL)
          filename =  md5obj.hexdigest()
        else:
+         import re
          filename = re.sub('\W','',URL);
          filename = re.sub('^http','',filename);
        if options.datestamp:

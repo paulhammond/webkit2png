@@ -36,6 +36,7 @@ class AppDelegate (NSObject):
    # what happens when the app starts up
    def applicationDidFinishLaunching_(self, aNotification):
         if self.URL != None:
+          print "Fetching", self.URL, "..."
           self.webView.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(self.URL)))
         else:
           NSApplication.sharedApplication().terminate_(None)

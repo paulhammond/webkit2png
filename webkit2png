@@ -25,7 +25,6 @@ from Foundation import *
 import WebKit
 from AppKit import *
 import objc
-import sys
 from optparse import OptionParser
 
 class AppDelegate (NSObject):
@@ -92,6 +91,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def getURL(self,webview):
         if self.urls:
             if self.urls[0] == '-':
+                import sys
                 url = sys.stdin.readline().rstrip()
                 if not url: NSApplication.sharedApplication().terminate_(None)
             else: 

@@ -32,9 +32,10 @@ import os
 import md5
 
 class AppDelegate (NSObject):
-   # what happens when the app starts up
-   def applicationDidFinishLaunching_(self, aNotification):
-      self.webview.frameLoadDelegate().getURL(self.webview)
+    # what happens when the app starts up
+    def applicationDidFinishLaunching_(self, aNotification):
+        webview = aNotification.object().windows()[0].contentView()
+        webview.frameLoadDelegate().getURL(webview)
 
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
@@ -197,9 +198,6 @@ examples:
     loaddelegate.options = options
     loaddelegate.urls = args
     webview.setFrameLoadDelegate_(loaddelegate)
-    
-    # give the appdelegate some info
-    delegate.webview = webview
     
     win.display()
     app.run()    

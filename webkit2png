@@ -140,13 +140,15 @@ examples:
     cmdparser.add_option("-H", "--height",type="float",default=600.0,
        help="initial (and minimum) height of browser (default: 600)")
     cmdparser.add_option("--clipwidth",type="float",default=200.0,
-       help="width of clipped thumbnail (default: 200)")
+       help="width of clipped thumbnail (default: 200)",
+       metavar="WIDTH")
     cmdparser.add_option("--clipheight",type="float",default=150.0,
-       help="height of clipped thumbnail (default: 150)")
+       help="height of clipped thumbnail (default: 150)",
+       metavar="HEIGHT")
     cmdparser.add_option("-s", "--scale",type="float",default=0.25,
        help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option("-m", "--md5", action="store_true",
-       help="use md5 has for filename")
+       help="use md5 hash for filename (like del.icio.us)")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     (options, args) = cmdparser.parse_args()

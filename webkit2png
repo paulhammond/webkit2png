@@ -20,11 +20,19 @@ __version__ = "0.3.1"
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+                
+import sys
 
-import Foundation
-import WebKit
-import AppKit
-import objc
+try:
+  import Foundation
+  import WebKit
+  import AppKit
+  import objc
+except ImportError:
+  print "Cannot find pyobjc library files.  Are you sure it is installed?"
+  sys.exit() 
+
+
 from optparse import OptionParser
 
 class AppDelegate (Foundation.NSObject):
@@ -105,7 +113,6 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def getURL(self,webview):
         if self.urls:
             if self.urls[0] == '-':
-                import sys
                 url = sys.stdin.readline().rstrip()
                 if not url: AppKit.NSApplication.sharedApplication().terminate_(None)
             else: 

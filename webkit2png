@@ -38,6 +38,9 @@ class AppDelegate (NSObject):
 
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     # what happens if something goes wrong while loading
+    def webView_didFailLoadWithError_forFrame_(self,sender,error,frame):
+        print " ... something went wrong" 
+        self.getURL()
     def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
         print " ... something went wrong" 
         self.getURL()
@@ -94,6 +97,9 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
             NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
         self.webview.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(url)))
+        if not self.webview.mainFrame().provisionalDataSource():
+            print " ... not a proper url?"
+            self.getURL()
  
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,sender,frame):

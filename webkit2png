@@ -147,11 +147,15 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
         if (frame == webview.mainFrame()):
-            view = frame.frameView().documentView()
+            Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_( self.options.delay, self, self.doGrab, webview, False)
+
+    def doGrab(self,timer):
+            webview = timer.userInfo()
+            view = webview.mainFrame().frameView().documentView()
             
             self.resizeWebview(view)
 
-            URL = frame.dataSource().initialRequest().URL().absoluteString()
+            URL = webview.mainFrame().dataSource().initialRequest().URL().absoluteString()
             filename = self.makeFilename(URL, self.options) 
 
             bitmapdata = self.captureView(view)  
@@ -203,6 +207,8 @@ examples:
        help="include date in filename")
     cmdparser.add_option("-D", "--dir",type="string",default="./",
        help="directory to place images into")
+    cmdparser.add_option("--delay",type="float",default=0,
+       help="delay between page load finishing and screenshot")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     (options, args) = cmdparser.parse_args()

@@ -29,7 +29,6 @@ import sys
 from optparse import OptionParser
 import re
 import os
-import md5
 
 class AppDelegate (NSObject):
     # what happens when the app starts up
@@ -48,7 +47,12 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def makeFilename(self,URL,options):
        # make the filename
-       if (options.md5):
+       if options.md5:
+         try:
+                import md5
+         except ImportError:
+                print "--md5 requires python md5 library"
+                NSApplication.sharedApplication().terminate_(None)
          md5obj = md5.md5()
          md5obj.update(URL)
          filename =  md5obj.hexdigest()

@@ -59,7 +59,8 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          import time
          now = time.strftime("%Y%m%d")
          filename = now + "-" + filename
-       return filename 
+       dir = os.path.abspath(os.path.expanduser(options.dir))
+       return os.path.join(dir,filename)
 
     def saveImages(self,bitmapdata,filename,options):
         # save the fullsize png
@@ -165,6 +166,8 @@ examples:
        help="use md5 hash for filename (like del.icio.us)")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
+    cmdparser.add_option("-D", "--dir",type="string",default="./",
+       help="directory to place images into")
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_help()

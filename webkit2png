@@ -122,15 +122,14 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
         if (frame == webview.mainFrame()):
-            # resize the window and content to the natural size of the page
             view = frame.frameView().documentView()
+            
             self.resizeWebview(view)
-
-            bitmapdata = self.captureView(view)  
 
             URL = frame.dataSource().initialRequest().URL().absoluteString()
             filename = self.makeFilename(URL, options) 
 
+            bitmapdata = self.captureView(view)  
             self.saveImages(bitmapdata,filename,self.options)
 
             print " ... done"

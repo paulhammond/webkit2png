@@ -67,7 +67,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def saveImages(self,bitmapdata,filename,options):
         # save the fullsize png
-        bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
+        bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
 
         # work out how big the thumbnail is
         width = bitmapdata.pixelsWide()

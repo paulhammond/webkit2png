@@ -52,6 +52,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
        if (frame == sender.mainFrame()):
            # resize the window and content to the natural size of the page
            view = frame.frameView().documentView()
+           view.window().display()
            view.window().setContentSize_(view.bounds().size)
            view.setFrame_(view.bounds())
            

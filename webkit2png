@@ -199,7 +199,6 @@ examples:
     loaddelegate.urls = args
     webview.setFrameLoadDelegate_(loaddelegate)
     
-    win.display()
     app.run()    
 
 if __name__ == '__main__' : main()

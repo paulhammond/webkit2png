@@ -46,7 +46,21 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
        print "Something went wrong" 
        NSApplication.sharedApplication().terminate_(None)
-    
+
+    def makeFilename(self,URL,options):
+       # make the filename
+       if (options.md5):
+         md5obj = md5.md5()
+         md5obj.update(URL)
+         filename =  md5obj.hexdigest()
+       else:
+         filename = re.sub('\W','',URL);
+         filename = re.sub('^http','',filename);
+       if options.datestamp:
+         import time
+         now = time.strftime("%Y%m%d")
+         filename = now + "-" + filename
+       return filename 
     
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,sender,frame):
@@ -66,19 +80,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            
            # work out what URL we just made a screenshot of
            URL = frame.dataSource().initialRequest().URL().absoluteString()
-           
-           # make the filename
-           if (self.options.md5):
-             md5obj = md5.md5()
-             md5obj.update(URL)
-             filename =  md5obj.hexdigest()
-           else:
-             filename = re.sub('\W','',URL);
-             filename = re.sub('^http','',filename);
-           if self.options.datestamp:
-             import time
-             now = time.strftime("%Y%m%d")
-             filename = now + "-" + filename
+           filename = self.makeFilename(URL, self.options) 
 
            # save the fullsize png
            bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)

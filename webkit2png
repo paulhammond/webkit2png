@@ -23,6 +23,7 @@ import WebKit
 from AppKit import *
 import objc
 import sys
+from optparse import OptionParser
 import re
 import os
 objc.setVerbose(1) ### DEBUG
@@ -64,15 +65,15 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            # work out how big the thumbnail is
            width = bitmapdata.pixelsWide()
            height = bitmapdata.pixelsHigh()
-           thumbWidth = (150 * width/850)
-           thumbHeight = (150 * height / 850)
+           thumbWidth = (width *self.scale)
+           thumbHeight = (height *self.scale)
 
            # make the thumbnails in a scratch image
            scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight)).autorelease()
            scratch.lockFocus()
            NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
            thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
-           clipRect = NSMakeRect(0.0, thumbHeight-112, 150, 112)
+           clipRect = NSMakeRect(0.0, thumbHeight-self.clipHeight, self.clipWidth, self.clipHeight)
            bitmapdata.drawInRect_(thumbRect)
            thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect).autorelease()
            clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect).autorelease()
@@ -86,6 +87,30 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
 
 def main():
+
+    # parse the command line
+    cmdparser = OptionParser("usage: %prog [options] http://www.example.com", version="webkit2png 0.2 beta")
+    cmdparser.add_option("-W", "--width",type="float",default=800.0,
+       help="initial width of content area (default: 800)")
+    cmdparser.add_option("-H", "--height",type="float",default=600.0,
+       help="initial height of content area (default: 600)")
+    cmdparser.add_option("--clipwidth",type="float",default=200.0,
+       help="width of clipped thumbnail (default: 200)")
+    cmdparser.add_option("--clipheight",type="float",default=150.0,
+       help="height of clipped thumbnail (default: 150)")
+    cmdparser.add_option("-s", "--scale",type="float",default=0.25,
+       help="scale factor for thumbnails (default: 0.25)")
+    (options, args) = cmdparser.parse_args()
+    if len(args) != 1:
+      cmdparser.print_help()
+      return
+
+    # grab the url
+    URL=args[0]
+    # make the filename
+    filename = re.sub('\W','',URL);
+    filename = re.sub('^http','',filename);
+
     app = NSApplication.sharedApplication()
     
     # create an app delegate
@@ -93,23 +118,15 @@ def main():
     NSApp().setDelegate_(delegate)
 
     # create a window
-    rect = NSMakeRect(-16000.0,-16000.0,850.0,640.0)
+    print type(options.width)
+    rect = NSMakeRect(-16000.0,-16000.0,options.width,options.height)
     win = NSWindow.alloc()
     win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
-
-    # grab the url
-    try:
-        URL=sys.argv[1]
-    except IndexError:
-        raise "No URL, Don't Know What to Do"
-    # make the filename
-    filename = re.sub('\W','',URL);
-    filename = re.sub('^http','',filename);
 
     # create a webview object
     webview = WebKit.WebView.alloc()
     webview.initWithFrame_(rect)
-    # turn off scrolling so the content is actually 850 wide and not 835
+    # turn off scrolling so the content is actually x wide and not x-15
     webview.mainFrame().frameView().setAllowsScrolling_(objc.NO)
     # add the webview to the window
     win.setContentView_(webview)
@@ -117,6 +134,11 @@ def main():
     # create a LoadDelegate
     loaddelegate = WebkitLoad.alloc().init()
     loaddelegate.filename = filename
+    loaddelegate.width = options.width
+    loaddelegate.height = options.height
+    loaddelegate.clipWidth = options.clipwidth
+    loaddelegate.clipHeight = options.clipheight
+    loaddelegate.scale = options.scale
     webview.setFrameLoadDelegate_(loaddelegate)
     
     # give the appdelegate some info

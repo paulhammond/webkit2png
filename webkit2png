@@ -64,29 +64,41 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            bitmapdata.initWithFocusedViewRect_(view.bounds())
            view.unlockFocus()
            
+           # work out what URL we just made a screenshot of
+           URL = frame.dataSource().initialRequest().URL().absoluteString()
+           
+           # make the filename
+           if (self.options.md5):
+             md5obj = md5.md5()
+             md5obj.update(URL)
+             filename =  md5obj.hexdigest()
+           else:
+             filename = re.sub('\W','',URL);
+             filename = re.sub('^http','',filename);
+           
            # save the fullsize png
-           bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + ".png",objc.YES)
+           bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
 
            # work out how big the thumbnail is
            width = bitmapdata.pixelsWide()
            height = bitmapdata.pixelsHigh()
-           thumbWidth = (width *self.scale)
-           thumbHeight = (height *self.scale)
+           thumbWidth = (width *self.options.scale)
+           thumbHeight = (height *self.options.scale)
 
            # make the thumbnails in a scratch image
            scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight)).autorelease()
            scratch.lockFocus()
            NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
            thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
-           clipRect = NSMakeRect(0.0, thumbHeight-self.clipHeight, self.clipWidth, self.clipHeight)
+           clipRect = NSMakeRect(0.0, thumbHeight-self.options.clipheight, self.options.clipwidth, self.options.clipheight)
            bitmapdata.drawInRect_(thumbRect)
            thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect).autorelease()
            clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect).autorelease()
            scratch.unlockFocus()
 
            # save the thumbnails as pngs 
-           thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + "-thumb.png",objc.YES)
-           clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + "-clipped.png",objc.YES)
+           thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
+           clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
 
            NSApplication.sharedApplication().terminate_(None)
 
@@ -116,14 +128,6 @@ def main():
 
     # grab the url
     URL=args[0]
-    # make the filename
-    if (options.md5):
-      md5obj = md5.md5()
-      md5obj.update(URL)
-      filename =  md5obj.hexdigest()
-    else:
-      filename = re.sub('\W','',URL);
-      filename = re.sub('^http','',filename);
 
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
@@ -155,12 +159,7 @@ def main():
     
     # create a LoadDelegate
     loaddelegate = WebkitLoad.alloc().init()
-    loaddelegate.filename = filename
-    loaddelegate.width = options.width
-    loaddelegate.height = options.height
-    loaddelegate.clipWidth = options.clipwidth
-    loaddelegate.clipHeight = options.clipheight
-    loaddelegate.scale = options.scale
+    loaddelegate.options = options
     webview.setFrameLoadDelegate_(loaddelegate)
     
     # give the appdelegate some info

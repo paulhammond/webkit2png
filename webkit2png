@@ -1,0 +1,129 @@
+#!/usr/bin/python
+
+# webkit2pdf - makes screenshots of webpages
+# http://www.paranoidfish.org/projects/webkit2pdf
+
+# Copyright (C) 2004 Paul Hammond
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+from Foundation import *
+import WebKit
+from AppKit import *
+import objc
+import sys
+import re
+import os
+objc.setVerbose(1) ### DEBUG
+
+class AppDelegate (NSObject):
+   # what happens when the app starts up
+   def applicationDidFinishLaunching_(self, aNotification):
+        if self.URL != None:
+          self.webView.mainFrame().loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(self.URL)))
+        else:
+          NSApplication.sharedApplication().terminate_(None)
+
+class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
+    # what happens if something goes wrong while loading
+    def webView_didFailProvisionalLoadWithError_forFrame_(self,sender,error,frame):
+       print "Something went wrong" 
+       NSApplication.sharedApplication().terminate_(None)
+    
+    
+    # what happens when the page has finished loading
+    def webView_didFinishLoadForFrame_(self,sender,frame):
+       # don't care about subframes
+       if (frame == sender.mainFrame()):
+           # resize the window and content to the natural size of the page
+           view = frame.frameView().documentView()
+           view.window().setContentSize_(view.bounds().size)
+           view.setFrame_(view.bounds())
+           
+           # take a screenshot
+           view.lockFocus()
+           bitmapdata = NSBitmapImageRep.alloc()
+           print str(view.bounds())
+           bitmapdata.initWithFocusedViewRect_(view.bounds())
+           view.unlockFocus()
+           
+           # save the fullsize png
+           bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + ".png",objc.YES)
+
+           # work out how big the thumbnail is
+           width = bitmapdata.pixelsWide()
+           height = bitmapdata.pixelsHigh()
+           thumbWidth = (150 * width/850)
+           thumbHeight = (150 * height / 850)
+
+           # make the thumbnails in a scratch image
+           scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight)).autorelease()
+           scratch.lockFocus()
+           NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
+           thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
+           clipRect = NSMakeRect(0.0, thumbHeight-112, 150, 112)
+           bitmapdata.drawInRect_(thumbRect)
+           thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect).autorelease()
+           clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect).autorelease()
+           scratch.unlockFocus()
+
+           # save the thumbnails as pngs 
+           thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + "-thumb.png",objc.YES)
+           clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(self.filename + "-clipped.png",objc.YES)
+
+           NSApplication.sharedApplication().terminate_(None)
+
+
+def main():
+    app = NSApplication.sharedApplication()
+    
+    # create an app delegate
+    delegate = AppDelegate.alloc().init()
+    NSApp().setDelegate_(delegate)
+
+    # create a window
+    rect = NSMakeRect(-16000.0,-16000.0,850.0,640.0)
+    win = NSWindow.alloc()
+    win.initWithContentRect_styleMask_backing_defer_ (rect, NSBorderlessWindowMask, 2, 0)
+
+    # grab the url
+    try:
+        URL=sys.argv[1]
+    except IndexError:
+        raise "No URL, Don't Know What to Do"
+    # make the filename
+    filename = re.sub('\W','',URL);
+    filename = re.sub('^http','',filename);
+
+    # create a webview object
+    webview = WebKit.WebView.alloc()
+    webview.initWithFrame_(rect)
+    # turn off scrolling so the content is actually 850 wide and not 835
+    webview.mainFrame().frameView().setAllowsScrolling_(objc.NO)
+    # add the webview to the window
+    win.setContentView_(webview)
+    
+    # create a LoadDelegate
+    loaddelegate = WebkitLoad.alloc().init()
+    loaddelegate.filename = filename
+    webview.setFrameLoadDelegate_(loaddelegate)
+    
+    # give the appdelegate some info
+    delegate.webView = webview
+    delegate.URL = URL
+    
+    win.display()
+    app.run()    
+
+if __name__ == '__main__' : main()

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # webkit2png - makes screenshots of webpages
 # http://www.paranoidfish.org/projects/webkit2png

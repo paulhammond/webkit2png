@@ -4,6 +4,8 @@
 # http://www.paranoidfish.org/projects/webkit2pdf
 __version__ = "0.2"
 
+# $Id$
+
 # Copyright (C) 2004 Paul Hammond
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

@@ -111,6 +111,13 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def resizeWebview(self,view):
         view.window().setContentSize_(view.bounds().size)
         view.setFrame_(view.bounds())
+
+    def captureView(self,view):
+        view.lockFocus()
+        bitmapdata = NSBitmapImageRep.alloc()
+        bitmapdata.initWithFocusedViewRect_(view.bounds())
+        view.unlockFocus()
+        return bitmapdata
  
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,webview,frame):
@@ -120,12 +127,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            view = frame.frameView().documentView()
            self.resizeWebview(view)
  
-           # take a screenshot
-           view.lockFocus()
-           bitmapdata = NSBitmapImageRep.alloc()
-           bitmapdata.initWithFocusedViewRect_(view.bounds())
-           view.unlockFocus()
-           
+           bitmapdata = self.captureView(view)  
            # work out what URL we just made a screenshot of
            URL = frame.dataSource().initialRequest().URL().absoluteString()
            

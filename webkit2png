@@ -61,6 +61,32 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
          now = time.strftime("%Y%m%d")
          filename = now + "-" + filename
        return filename 
+
+    def makeImages(self,bitmapdata,URL,options):
+        filename = self.makeFilename(URL, options) 
+        # save the fullsize png
+        bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
+
+        # work out how big the thumbnail is
+        width = bitmapdata.pixelsWide()
+        height = bitmapdata.pixelsHigh()
+        thumbWidth = (width * options.scale)
+        thumbHeight = (height * options.scale)
+
+        # make the thumbnails in a scratch image
+        scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
+        scratch.lockFocus()
+        NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
+        thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
+        clipRect = NSMakeRect(0.0, thumbHeight-options.clipheight, options.clipwidth, options.clipheight)
+        bitmapdata.drawInRect_(thumbRect)
+        thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
+        clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
+        scratch.unlockFocus()
+           
+        # save the thumbnails as pngs 
+        thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
+        clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
     
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,sender,frame):
@@ -80,31 +106,8 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
            
            # work out what URL we just made a screenshot of
            URL = frame.dataSource().initialRequest().URL().absoluteString()
-           filename = self.makeFilename(URL, self.options) 
-
-           # save the fullsize png
-           bitmapdata.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + ".png",objc.YES)
-
-           # work out how big the thumbnail is
-           width = bitmapdata.pixelsWide()
-           height = bitmapdata.pixelsHigh()
-           thumbWidth = (width *self.options.scale)
-           thumbHeight = (height *self.options.scale)
-
-           # make the thumbnails in a scratch image
-           scratch = NSImage.alloc().initWithSize_(NSMakeSize(thumbWidth,thumbHeight))
-           scratch.lockFocus()
-           NSGraphicsContext.currentContext().setImageInterpolation_(NSImageInterpolationHigh)
-           thumbRect = NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
-           clipRect = NSMakeRect(0.0, thumbHeight-self.options.clipheight, self.options.clipwidth, self.options.clipheight)
-           bitmapdata.drawInRect_(thumbRect)
-           thumbOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
-           clipOutput = NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
-           scratch.unlockFocus()
-
-           # save the thumbnails as pngs 
-           thumbOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
-           clipOutput.representationUsingType_properties_(NSPNGFileType,None).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
+           
+           self.makeImages(bitmapdata,URL,self.options)
 
            NSApplication.sharedApplication().terminate_(None)
 

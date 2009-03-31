@@ -45,14 +45,21 @@ class AppDelegate (Foundation.NSObject):
     def applicationDidFinishLaunching_(self, aNotification):
         webview = aNotification.object().windows()[0].contentView()
         webview.frameLoadDelegate().getURL(webview)
+        self.performSelector_withObject_afterDelay_( "timeout:", None, 60 )
+
+    def timeout_(self, obj):
+        NSLog("timed out!")
+        NSApplication.sharedApplication().terminate_(None)
 
 class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
+
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong" 
+        print " ... something went wrong: "+error.localizedDescription() )
         self.getURL(webview)
+
     def webView_didFailProvisionalLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong" 
+        print " ... something went wrong: "+error.localizedDescription() )
         self.getURL(webview)
 
     def makeFilename(self,URL,options):

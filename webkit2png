@@ -55,11 +55,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong: "+error.localizedDescription() )
+        print " ... something went wrong: "+error.localizedDescription()
         self.getURL(webview)
 
     def webView_didFailProvisionalLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong: "+error.localizedDescription() )
+        print " ... something went wrong: "+error.localizedDescription()
         self.getURL(webview)
 
     def makeFilename(self,URL,options):

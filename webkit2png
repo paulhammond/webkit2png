@@ -217,24 +217,28 @@ if mode == 'pygtk':
         pixbuf.save(filename + "-full.png", "png")
       
       if self.options.thumb or self.options.clipped:
-        thumbWidth = (size[0] * self.options.scale)
-        thumbHeight = (size[1] * self.options.scale)
+        thumbWidth = int(size[0] * self.options.scale)
+        thumbHeight = int(size[1] * self.options.scale)
         
         thumbbuf = pixbuf.scale_simple(thumbWidth, thumbHeight, gtk.gdk.INTERP_BILINEAR)
         if self.options.thumb:
           thumbbuf.save(filename + "-thumb.png", "png")
           
         if self.options.clipped:
-          clipbuf = thumbbuf.subpixbuf(0,thumbHeight-self.options.clipheight,self.options.clipwidth, self.options.clipheight)
+          clipbuf = thumbbuf.subpixbuf(0,thumbHeight-int(self.options.clipheight),int(self.options.clipwidth), int(self.options.clipheight))
           clipbuf.save(filename + "-clip.png", "png")
       
       gtk.main_quit()
     
     def __init__(self, options, args):
       self.options = options;
+      
+      if options.delay:
+        print "--delay is only supported on Mac OS X (for now). Sorry!"
+      
       gobject.threads_init()
       window = gtk.Window()
-      window.resize(options.initWidth,options.initHeight)
+      window.resize(int(options.initWidth),int(options.initHeight))
       view = webkit.WebView()
       
       settings = view.get_settings()

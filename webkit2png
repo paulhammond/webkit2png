@@ -239,8 +239,7 @@ if mode == 'pygtk':
     def __init__(self, options, args):
       gobject.threads_init()
       window = gtk.Window()
-      window.set_default_size(600, 480)
-      
+      window.resize(options.initWidth,options.initHeight)
       view = webkit.WebView()
       view.connect("load-finished", self._view_load_finished_cb)
       

@@ -1,3 +1,12 @@
-webkit2png is a command line tool that creates png screenshots of webpages.
+webkit2png is a command line tool that creates png screenshots of webpages. For more details, visit http://www.paulhammond.org/webkit2png/
 
-For more details, visit http://www.paulhammond.org/webkit2png/
+This branch includes experimental linux support:
+
+. The script auto-detects what environment it's running in, so it works on linux and the mac.
+
+. You need pywebkitgtk installed - you can get this from http://code.google.com/p/pywebkitgtk/ or the python-webkit package in Ubuntu and Debian testing/unstable.
+
+. You'll need an x window server. If you're working on a machine with no real screen attached try Xvfb. Something like the following should work if you've installed the Debian or Ubuntu xvfb package:
+$ xvfb-run -s "-screen 0 1024x768x24" python ./webkit2png http://www.example.net/
+
+. There is no error handling, nor is the --delay parameter supported. This has been barely tested, expect it to break.

@@ -206,14 +206,27 @@ if mode == 'pygtk':
     def _view_load_finished_cb(self, view, web_frame):
       
       pixmap = view.get_snapshot(None)
-      s = pixmap.get_size();
-      pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, s[0], s[1])
-      pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),0,0,0,0,-1,-1)
+      size = pixmap.get_size();
       
       URL = view.get_main_frame().get_uri()
       filename = makeFilename(URL, self.options)
       
-      pixbuf.save(filename + "-full.png", "png")
+      pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, size[0], size[1])
+      pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),0,0,0,0,-1,-1)
+      if self.options.fullsize:
+        pixbuf.save(filename + "-full.png", "png")
+      
+      if self.options.thumb or self.options.clipped:
+        thumbWidth = (size[0] * self.options.scale)
+        thumbHeight = (size[1] * self.options.scale)
+        
+        thumbbuf = pixbuf.scale_simple(thumbWidth, thumbHeight, gtk.gdk.INTERP_BILINEAR)
+        if self.options.thumb:
+          thumbbuf.save(filename + "-thumb.png", "png")
+          
+        if self.options.clipped:
+          clipbuf = thumbbuf.subpixbuf(0,thumbHeight-self.options.clipheight,self.options.clipwidth, self.options.clipheight)
+          clipbuf.save(filename + "-clip.png", "png")
       
       gtk.main_quit()
     

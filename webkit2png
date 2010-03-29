@@ -236,6 +236,11 @@ if mode == 'pygtk':
       window = gtk.Window()
       window.resize(options.initWidth,options.initHeight)
       view = webkit.WebView()
+      
+      settings = view.get_settings()
+      settings.set_property("auto-load-images", not options.noimages)
+      view.set_settings(settings)
+      
       view.connect("load-finished", self._view_load_finished_cb)
       
       window.add(view)

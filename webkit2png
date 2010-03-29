@@ -72,29 +72,6 @@ if mode == 'pyobjc':
             print " ... something went wrong: "+error.localizedDescription()
             self.getURL(webview)
 
-        def makeFilename(self,URL,options):
-           # make the filename
-           if options.filename:
-             filename = options.filename
-           elif options.md5:
-             try:
-                    import md5
-             except ImportError:
-                    print "--md5 requires python md5 library"
-                    AppKit.NSApplication.sharedApplication().terminate_(None)
-             filename = md5.new(URL).hexdigest()
-           else:
-             import re
-             filename = re.sub('\W','',URL);
-             filename = re.sub('^http','',filename);
-           if options.datestamp:
-             import time
-             now = time.strftime("%Y%m%d")
-             filename = now + "-" + filename
-           import os
-           dir = os.path.abspath(os.path.expanduser(options.dir))
-           return os.path.join(dir,filename)
-
         def saveImages(self,bitmapdata,filename,options):
             # save the fullsize png
             if options.fullsize:
@@ -178,7 +155,7 @@ if mode == 'pyobjc':
                 self.resizeWebview(view)
 
                 URL = webview.mainFrame().dataSource().initialRequest().URL().absoluteString()
-                filename = self.makeFilename(URL, self.options) 
+                filename = makeFilename(URL, self.options) 
 
                 bitmapdata = self.captureView(view)  
                 self.saveImages(bitmapdata,filename,self.options)
@@ -232,11 +209,16 @@ if mode == 'pygtk':
       s = pixmap.get_size();
       pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, s[0], s[1])
       pixbuf.get_from_drawable(pixmap, pixmap.get_colormap(),0,0,0,0,-1,-1)
-      pixbuf.save("out.png", "png")
+      
+      URL = view.get_main_frame().get_uri()
+      filename = makeFilename(URL, self.options)
+      
+      pixbuf.save(filename + "-full.png", "png")
       
       gtk.main_quit()
     
     def __init__(self, options, args):
+      self.options = options;
       gobject.threads_init()
       window = gtk.Window()
       window.resize(options.initWidth,options.initHeight)
@@ -328,7 +310,30 @@ examples:
         PyObjcBrowser(options, args)
       elif mode == 'pygtk':
         PyGTKBrowser(options, args)
-      
+
+def makeFilename(URL,options):
+   # make the filename
+   if options.filename:
+     filename = options.filename
+   elif options.md5:
+     try:
+            import md5
+     except ImportError:
+            print "--md5 requires python md5 library"
+            AppKit.NSApplication.sharedApplication().terminate_(None)
+     filename = md5.new(URL).hexdigest()
+   else:
+     import re
+     filename = re.sub('\W','',URL);
+     filename = re.sub('^http','',filename);
+   if options.datestamp:
+     import time
+     now = time.strftime("%Y%m%d")
+     filename = now + "-" + filename
+   import os
+   dir = os.path.abspath(os.path.expanduser(options.dir))
+   return os.path.join(dir,filename)
+
       
 if __name__ == "__main__": main()
   

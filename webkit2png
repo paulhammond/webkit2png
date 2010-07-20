@@ -83,6 +83,8 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
          filename = now + "-" + filename
        import os
        dir = os.path.abspath(os.path.expanduser(options.dir))
+       if not os.path.exists(options.dir):
+	        os.makedirs(dir)
        return os.path.join(dir,filename)
 
     def saveImages(self,bitmapdata,filename,options):

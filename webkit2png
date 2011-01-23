@@ -203,6 +203,8 @@ examples:
     cmdparser.add_option("--clipheight",type="float",default=150.0,
        help="height of clipped thumbnail (default: 150)",
        metavar="HEIGHT")
+    cmdparser.add_option("-z", "--zoom",type="float",default=1.0,
+       help="full page zoom of browser (default: 1.0)")
     cmdparser.add_option("-s", "--scale",type="float",default=0.25,
        help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option("-m", "--md5", action="store_true",
@@ -244,6 +246,7 @@ examples:
     #  (this might need to be larger so clipped image is right size)
     options.initWidth = (options.clipwidth / options.scale)
     options.initHeight = (options.clipheight / options.scale)
+    options.width *= options.zoom
     if options.width>options.initWidth:
        options.initWidth = options.width
     if options.height>options.initHeight:
@@ -270,6 +273,7 @@ examples:
 
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
+    webview._setZoomMultiplier_isTextOnly_(options.zoom, False)
 
     # add the webview to the window
     win.setContentView_(webview)

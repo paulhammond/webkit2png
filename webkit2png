@@ -276,7 +276,7 @@ examples:
         return
     if options.filename:
         if len(args) != 1 or args[0] == "-":
-          print "--filename option requires exactly one url"
+          self.error("--filename option requires exactly one url")
           return
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")

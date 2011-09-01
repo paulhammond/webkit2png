@@ -25,9 +25,10 @@ __version__ = "0.5"
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-                
+
 import sys
 import optparse
+import json
 
 try:
   import Foundation
@@ -37,7 +38,6 @@ try:
 except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
   sys.exit() 
-
 
 
 class AppDelegate (Foundation.NSObject):
@@ -52,14 +52,40 @@ class AppDelegate (Foundation.NSObject):
         NSApplication.sharedApplication().terminate_(None)
 
 class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
-
+    
+    def info(self,message):
+        if not self.options.json:
+            print "info: " + message
+    
+    def error(self,message):
+        if self.options.json:
+            print json.dumps( {
+                "status"  : "error",
+                "message" : message
+            } )
+        else:
+            print "error: " + message
+        
+    def success(self,message,paths):
+        if self.options.json:
+            print json.dumps(
+                {
+                    "status"  : "success",
+                    "message" : message,
+                    "paths"   : paths
+                },
+                indent = 4 if self.options.pretty else None
+            )
+        else:
+            print "success: " + message
+    
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong: "+error.localizedDescription()
+        self.error("something went wrong: "+error.localizedDescription())
         self.getURL(webview)
 
     def webView_didFailProvisionalLoadWithError_forFrame_(self,webview,error,frame):
-        print " ... something went wrong: "+error.localizedDescription()
+        self.error("something went wrong: "+error.localizedDescription())
         self.getURL(webview)
 
     def makeFilename(self,URL,options):
@@ -70,7 +96,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
          try:
                 import md5
          except ImportError:
-                print "--md5 requires python md5 library"
+                self.error("--md5 requires python md5 library")
                 AppKit.NSApplication.sharedApplication().terminate_(None)
          filename = md5.new(URL).hexdigest()
        else:
@@ -86,9 +112,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
        return os.path.join(dir,filename)
 
     def saveImages(self,bitmapdata,filename,options):
+        paths = {}
         # save the fullsize png
         if options.fullsize:
             bitmapdata.representationUsingType_properties_(AppKit.NSPNGFileType,None).writeToFile_atomically_(filename + "-full.png",objc.YES)
+            paths['full'] = filename + "-full.png"
 
         if options.thumb or options.clipped:
             # work out how big the thumbnail is
@@ -117,10 +145,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 thumbOutput.representationUsingType_properties_(
                         AppKit.NSPNGFileType,None
                     ).writeToFile_atomically_(filename + "-thumb.png",objc.YES)
+                paths['thumb'] = filename + "-thumb.png"
             if options.clipped:
                 clipOutput.representationUsingType_properties_(
                         AppKit.NSPNGFileType,None
                     ).writeToFile_atomically_(filename + "-clipped.png",objc.YES)
+                paths['clipped'] = filename + "-clipped.png"
+            
+            self.success("images successfully saved to disk.", paths)
 
     def getURL(self,webview):
         if self.urls:
@@ -131,11 +163,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 url = self.urls.pop(0)
         else:
             AppKit.NSApplication.sharedApplication().terminate_(None)
-        print "Fetching", url, "..."
+        self.info("fetching " + url + "...")
         self.resetWebview(webview,self.options)
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
-            print " ... not a proper url?"
+            self.error("not a proper url?")
             self.getURL(webview)
      
     def resetWebview(self,webview,options):
@@ -180,8 +212,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             bitmapdata = self.captureView(view)  
             self.saveImages(bitmapdata,filename,self.options)
-
-            print " ... done"
+            self.info("done.")
             self.getURL(webview)
 
 
@@ -233,6 +264,10 @@ examples:
        help="don't load images")
     cmdparser.add_option("-t", "--transparent", action="store_true",
        help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
+    cmdparser.add_option("-j", "--json", action="store_true",
+       help="output errors and informations in the JSON format", default=False)
+    cmdparser.add_option("--pretty", action="store_true",
+       help="nicely formats the JSON output (only used with --json or -j)", default=False)
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     (options, args) = cmdparser.parse_args()

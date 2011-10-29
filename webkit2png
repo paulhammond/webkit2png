@@ -159,6 +159,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
         if (frame == webview.mainFrame()):
+            if self.options.js:
+                scriptobject = webview.windowScriptObject()
+                scriptobject.evaluateWebScript_(self.options.js)
             Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_( self.options.delay, self, self.doGrab, webview, False)
 
     def doGrab(self,timer):
@@ -225,6 +228,8 @@ examples:
        help="don't load images")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
+    cmdparser.add_option("--js", type="string", default=None,
+       help="JavaScript to execute when the window finishes loading")
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_usage()

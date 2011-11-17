@@ -223,6 +223,8 @@ examples:
        help="delay between page load finishing and screenshot")
     cmdparser.add_option("--noimages", action="store_true",
        help="don't load images")
+    cmdparser.add_option("--nojs", action="store_true",
+       help="disable JavaScript support")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     (options, args) = cmdparser.parse_args()
@@ -270,6 +272,7 @@ examples:
 
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
+    webview.preferences().setJavaScriptEnabled_(not options.nojs)
 
     # add the webview to the window
     win.setContentView_(webview)

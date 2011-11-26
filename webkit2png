@@ -273,7 +273,9 @@ examples:
 
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
-    webview._setZoomMultiplier_isTextOnly_(options.zoom, False)
+
+    if options.zoom != 1.0:
+      webview._setZoomMultiplier_isTextOnly_(options.zoom, False)
 
     # add the webview to the window
     win.setContentView_(webview)

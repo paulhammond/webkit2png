@@ -132,15 +132,23 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         else:
             AppKit.NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
-        self.resetWebview(webview)
+        self.resetWebview(webview,self.options)
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
      
-    def resetWebview(self,webview):
+    def resetWebview(self,webview,options):
         rect = Foundation.NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
-        webview.window().setContentSize_((self.options.initWidth,self.options.initHeight))
+        window = webview.window()
+        window.setContentSize_((self.options.initWidth,self.options.initHeight))
+        
+        # make the window background transparent
+        if options.transparent:
+            window.setOpaque_(objc.NO)
+            window.setBackgroundColor_(AppKit.NSColor.clearColor())
+            webview.setDrawsBackground_(objc.NO)
+        
         webview.setFrame_(rect)
     
     def resizeWebview(self,view):
@@ -226,6 +234,8 @@ examples:
        help="delay between page load finishing and screenshot")
     cmdparser.add_option("--noimages", action="store_true",
        help="don't load images")
+    cmdparser.add_option("-t", "--transparent", action="store_true",
+       help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     cmdparser.add_option("--js", type="string", default=None,

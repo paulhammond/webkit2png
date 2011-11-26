@@ -132,23 +132,22 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         else:
             AppKit.NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
-        self.resetWebview(webview,self.options)
+        self.resetWebview(webview)
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
      
-    def resetWebview(self,webview,options):
+    def resetWebview(self,webview):
         rect = Foundation.NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
         window = webview.window()
         window.setContentSize_((self.options.initWidth,self.options.initHeight))
-        
-        # make the window background transparent
-        if options.transparent:
+
+        if self.options.transparent:
             window.setOpaque_(objc.NO)
             window.setBackgroundColor_(AppKit.NSColor.clearColor())
             webview.setDrawsBackground_(objc.NO)
-        
+
         webview.setFrame_(rect)
     
     def resizeWebview(self,view):

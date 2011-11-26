@@ -230,7 +230,7 @@ examples:
        help="delay between page load finishing and screenshot")
     cmdparser.add_option("--noimages", action="store_true",
        help="don't load images")
-    cmdparser.add_option("-t", "--transparent", action="store_true",
+    cmdparser.add_option("--transparent", action="store_true",
        help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)

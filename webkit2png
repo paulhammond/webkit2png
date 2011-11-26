@@ -29,6 +29,12 @@ __version__ = "0.5"
 import sys
 import optparse
 
+import os
+original_python_path = '/System/Library/Frameworks/Python.framework/Versions'\
+    '/2.6/Extras/lib/python/PyObjC'
+if os.path.exists(original_python_path):
+    sys.path.append(original_python_path)
+
 try:
   import Foundation
   import WebKit

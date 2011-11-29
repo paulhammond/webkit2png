@@ -48,8 +48,8 @@ class AppDelegate (Foundation.NSObject):
         self.performSelector_withObject_afterDelay_( "timeout:", None, 60 )
 
     def timeout_(self, obj):
-        NSLog("timed out!")
-        NSApplication.sharedApplication().terminate_(None)
+        Foundation.NSLog("timed out!")
+        AppKit.NSApplication.sharedApplication().terminate_(None)
 
 class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 

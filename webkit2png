@@ -158,12 +158,16 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         view.setFrame_(view.bounds())
 
     def captureView(self,view):
-        view.lockFocus()
-        bitmapdata = AppKit.NSBitmapImageRep.alloc()
-        bitmapdata.initWithFocusedViewRect_(view.bounds())
-        view.unlockFocus()
+        if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):
+            bitmapdata = view.bitmapImageRepForCachingDisplayInRect_(view.bounds())
+            view.cacheDisplayInRect_toBitmapImageRep_(view.bounds(), bitmapdata)
+        else:
+            view.lockFocus()
+            bitmapdata = AppKit.NSBitmapImageRep.alloc()
+            bitmapdata.initWithFocusedViewRect_(view.bounds())
+            view.unlockFocus()
         return bitmapdata
- 
+
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes

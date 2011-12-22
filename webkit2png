@@ -249,6 +249,8 @@ examples:
        help=optparse.SUPPRESS_HELP)
     cmdparser.add_option("--js", type="string", default=None,
        help="JavaScript to execute when the window finishes loading")
+    cmdparser.add_option("-a", "--user-agent", type="string",default=False, action="store",
+       dest="user_agent", help="set the user agent string")
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_usage()
@@ -292,6 +294,10 @@ examples:
     webview.initWithFrame_(rect)
     # turn off scrolling so the content is actually x wide and not x-15
     webview.mainFrame().frameView().setAllowsScrolling_(objc.NO)
+
+    # if the user has supplied a user agent, set it.
+    if options.user_agent:
+        webview.setCustomUserAgent_(options.user_agent)
 
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)

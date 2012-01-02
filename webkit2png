@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 # webkit2png - makes screenshots of webpages
 # http://www.paulhammond.org/webkit2png
@@ -48,8 +48,8 @@ class AppDelegate (Foundation.NSObject):
         self.performSelector_withObject_afterDelay_( "timeout:", None, 60 )
 
     def timeout_(self, obj):
-        NSLog("timed out!")
-        NSApplication.sharedApplication().terminate_(None)
+        Foundation.NSLog("timed out!")
+        AppKit.NSApplication.sharedApplication().terminate_(None)
 
 class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
@@ -83,6 +83,8 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
          filename = now + "-" + filename
        import os
        dir = os.path.abspath(os.path.expanduser(options.dir))
+       if not os.path.exists(options.dir):
+	        os.makedirs(dir)
        return os.path.join(dir,filename)
 
     def saveImages(self,bitmapdata,filename,options):
@@ -140,7 +142,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
      
     def resetWebview(self,webview):
         rect = Foundation.NSMakeRect(0,0,self.options.initWidth,self.options.initHeight)
-        webview.window().setContentSize_((self.options.initWidth,self.options.initHeight))
+        window = webview.window()
+        window.setContentSize_((self.options.initWidth,self.options.initHeight))
+
+        if self.options.transparent:
+            window.setOpaque_(objc.NO)
+            window.setBackgroundColor_(AppKit.NSColor.clearColor())
+            webview.setDrawsBackground_(objc.NO)
+
         webview.setFrame_(rect)
     
     def resizeWebview(self,view):
@@ -149,22 +158,29 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         view.setFrame_(view.bounds())
 
     def captureView(self,view):
-        view.lockFocus()
-        bitmapdata = AppKit.NSBitmapImageRep.alloc()
-        bitmapdata.initWithFocusedViewRect_(view.bounds())
-        view.unlockFocus()
+        if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):
+            bitmapdata = view.bitmapImageRepForCachingDisplayInRect_(view.bounds())
+            view.cacheDisplayInRect_toBitmapImageRep_(view.bounds(), bitmapdata)
+        else:
+            view.lockFocus()
+            bitmapdata = AppKit.NSBitmapImageRep.alloc()
+            bitmapdata.initWithFocusedViewRect_(view.bounds())
+            view.unlockFocus()
         return bitmapdata
-    
+
     def captureViewPDF(self,view):
         view.lockFocus()
         pdfdata = view.dataWithPDFInsideRect_(view.bounds())
         view.unlockFocus()
         return pdfdata
- 
+
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
         if (frame == webview.mainFrame()):
+            if self.options.js:
+                scriptobject = webview.windowScriptObject()
+                scriptobject.evaluateWebScript_(self.options.js)
             Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_( self.options.delay, self, self.doGrab, webview, False)
 
     def doGrab(self,timer):
@@ -178,7 +194,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             bitmapdata = self.captureView(view)  
             self.saveImages(bitmapdata,filename,self.options)
-            
+
             if self.options.pdf:
                 if not self.options.printerfriendly:
                     webview.preferences().setShouldPrintBackgrounds_( objc.YES )
@@ -217,6 +233,8 @@ examples:
     cmdparser.add_option("--clipheight",type="float",default=150.0,
        help="height of clipped thumbnail (default: 150)",
        metavar="HEIGHT")
+    cmdparser.add_option("-z", "--zoom",type="float",default=1.0,
+       help="full page zoom of browser (default: 1.0)")
     cmdparser.add_option("-s", "--scale",type="float",default=0.25,
        help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option("-m", "--md5", action="store_true",
@@ -241,8 +259,14 @@ examples:
        help="delay between page load finishing and screenshot")
     cmdparser.add_option("--noimages", action="store_true",
        help="don't load images")
+    cmdparser.add_option("--transparent", action="store_true",
+       help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
+    cmdparser.add_option("--nojs", action="store_true",
+       help="disable JavaScript support")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
+    cmdparser.add_option("--js", type="string", default=None,
+       help="JavaScript to execute when the window finishes loading")
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_usage()
@@ -265,6 +289,7 @@ examples:
     #  (this might need to be larger so clipped image is right size)
     options.initWidth = (options.clipwidth / options.scale)
     options.initHeight = (options.clipheight / options.scale)
+    options.width *= options.zoom
     if options.width>options.initWidth:
        options.initWidth = options.width
     if options.height>options.initHeight:
@@ -291,6 +316,10 @@ examples:
 
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
+    webview.preferences().setJavaScriptEnabled_(not options.nojs)
+
+    if options.zoom != 1.0:
+      webview._setZoomMultiplier_isTextOnly_(options.zoom, False)
 
     # add the webview to the window
     win.setContentView_(webview)

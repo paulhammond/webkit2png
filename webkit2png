@@ -81,6 +81,10 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
          import time
          now = time.strftime("%Y%m%d")
          filename = now + "-" + filename
+       if options.timestamp: 
+         import time
+         now = time.strftime("%Y%m%d%H%M%S")
+         filename = now + "-" + filename
        import os
        dir = os.path.abspath(os.path.expanduser(options.dir))
        if not os.path.exists(options.dir):
@@ -235,6 +239,8 @@ examples:
        help="only create clipped thumbnail screenshot")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
+    cmdparser.add_option("-t", "--timestamp", action="store_true",
+      help="include date and time in filename") 
     cmdparser.add_option("-D", "--dir",type="string",default="./",
        help="directory to place images into")
     cmdparser.add_option("--delay",type="float",default=0,

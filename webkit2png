@@ -168,6 +168,12 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             view.unlockFocus()
         return bitmapdata
 
+    def captureViewPDF(self,view):
+        view.lockFocus()
+        pdfdata = view.dataWithPDFInsideRect_(view.bounds())
+        view.unlockFocus()
+        return pdfdata
+
     # what happens when the page has finished loading
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
@@ -189,6 +195,13 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             bitmapdata = self.captureView(view)  
             self.saveImages(bitmapdata,filename,self.options)
 
+            if self.options.pdf:
+                if not self.options.printerfriendly:
+                    webview.preferences().setShouldPrintBackgrounds_( objc.YES )
+                    webview.setMediaStyle_( 'screen' )
+                pdfdata = self.captureViewPDF(view)
+                pdfdata.writeToFile_atomically_( filename + '.pdf', objc.YES )
+
             print " ... done"
             self.getURL(webview)
 
@@ -203,6 +216,7 @@ examples:
 %prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
 %prog -T http://google.com/         # just the thumbnail screengrab
 %prog -TF http://google.com/        # just thumbnail and fullsize grab
+%prog -P http://google.com/         # just the PDF screengrab
 %prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
 %prog -                             # screengrab urls from stdin
 %prog -h | less                     # full documentation"""
@@ -233,6 +247,10 @@ examples:
        help="only create thumbnail sreenshot")
     cmdparser.add_option("-C", "--clipped", action="store_true",
        help="only create clipped thumbnail screenshot")
+    cmdparser.add_option("-P", "--pdf", action="store_true",
+       help="only create a PDF")
+    cmdparser.add_option("--printerfriendly", action="store_true",
+       help="create a printer-friendly PDF (css media style print, no backgrounds)")
     cmdparser.add_option("-d", "--datestamp", action="store_true",
        help="include date in filename")
     cmdparser.add_option("-D", "--dir",type="string",default="./",
@@ -260,10 +278,13 @@ examples:
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
     # make sure we're outputing something
-    if not (options.fullsize or options.thumb or options.clipped):
+    if not (options.fullsize or options.thumb or options.clipped or options.pdf):
       options.fullsize = True
       options.thumb = True
       options.clipped = True
+      options.pdf = True
+    if options.printerfriendly and not options.pdf:
+      cmdparser.error("setting --printerfriendly without saving a PDF is illogical")
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
     options.initWidth = (options.clipwidth / options.scale)

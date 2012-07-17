@@ -3,7 +3,7 @@
 # webkit2png - makes screenshots of webpages
 # http://www.paulhammond.org/webkit2png
 
-__version__ = "0.5"
+__version__ = "0.6 beta"
 
 # Copyright (c) 2009 Paul Hammond
 #
@@ -245,6 +245,8 @@ examples:
        help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
     cmdparser.add_option("--nojs", action="store_true",
        help="disable JavaScript support")
+    cmdparser.add_option("--user-agent", type="string", default=False,
+       help="set user agent header")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
     cmdparser.add_option("--js", type="string", default=None,
@@ -293,6 +295,8 @@ examples:
     # turn off scrolling so the content is actually x wide and not x-15
     webview.mainFrame().frameView().setAllowsScrolling_(objc.NO)
 
+    if options.user_agent:
+      webview.setCustomUserAgent_(options.user_agent)
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
     webview.preferences().setJavaScriptEnabled_(not options.nojs)

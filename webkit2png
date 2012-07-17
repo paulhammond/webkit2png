@@ -255,8 +255,12 @@ Examples:
     group.add_option("--js", type="string", default=None,
        help="JavaScript to execute when the window finishes loading (example: --js='document.bgColor=\"red\";')")
     group.add_option("--noimages", action="store_true",
+       help=optparse.SUPPRESS_HELP)
+    group.add_option("--no-images", action="store_true",
        help="don't load images")
     group.add_option("--nojs", action="store_true",
+       help=optparse.SUPPRESS_HELP)
+    group.add_option("--no-js", action="store_true",
        help="disable JavaScript support")
     group.add_option("--transparent", action="store_true",
        help="render output on a transparent background (requires a web page with a transparent background)", default=False)
@@ -272,6 +276,15 @@ Examples:
         if len(args) != 1 or args[0] == "-":
           print "--filename option requires exactly one url"
           return
+
+    # deprecated options
+    if options.nojs:
+       print >> sys.stderr, 'Warning: --nojs will be removed in webkit2png 1.0. Please use --no-js.'
+       options.no_js = True
+    if options.noimages:
+       print >> sys.stderr, 'Warning: --noimages will be removed in webkit2png 1.0. Please use --no-images.'
+       options.no_images = True
+
     if options.scale == 0:
       cmdparser.error("scale cannot be zero")
     # make sure we're outputing something
@@ -311,8 +324,8 @@ Examples:
     if options.user_agent:
       webview.setCustomUserAgent_(options.user_agent)
     webview.setPreferencesIdentifier_('webkit2png')
-    webview.preferences().setLoadsImagesAutomatically_(not options.noimages)
-    webview.preferences().setJavaScriptEnabled_(not options.nojs)
+    webview.preferences().setLoadsImagesAutomatically_(not options.no_images)
+    webview.preferences().setJavaScriptEnabled_(not options.no_js)
 
     if options.zoom != 1.0:
       webview._setZoomMultiplier_isTextOnly_(options.zoom, False)

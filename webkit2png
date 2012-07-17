@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# webkit2png - makes screenshots of webpages
+# webkit2png - makes screenshots of web pages
 # http://www.paulhammond.org/webkit2png
 
 __version__ = "0.6 beta"
@@ -198,7 +198,7 @@ def main():
     # parse the command line
     usage = """%prog [options] [http://example.net/ ...]
 
-examples:
+Examples:
 %prog http://google.com/            # screengrab google
 %prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
 %prog -T http://google.com/         # just the thumbnail screengrab
@@ -209,48 +209,61 @@ examples:
 
     cmdparser = optparse.OptionParser(usage,version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
-    cmdparser.add_option("-W", "--width",type="float",default=800.0,
-       help="initial (and minimum) width of browser (default: 800)")
-    cmdparser.add_option("-H", "--height",type="float",default=600.0,
-       help="initial (and minimum) height of browser (default: 600)")
-    cmdparser.add_option("--clipwidth",type="float",default=200.0,
-       help="width of clipped thumbnail (default: 200)",
-       metavar="WIDTH")
-    cmdparser.add_option("--clipheight",type="float",default=150.0,
-       help="height of clipped thumbnail (default: 150)",
-       metavar="HEIGHT")
-    cmdparser.add_option("-z", "--zoom",type="float",default=1.0,
-       help="full page zoom of browser (default: 1.0)")
-    cmdparser.add_option("-s", "--scale",type="float",default=0.25,
-       help="scale factor for thumbnails (default: 0.25)")
-    cmdparser.add_option("-m", "--md5", action="store_true",
-       help="use md5 hash for filename (like del.icio.us)")
-    cmdparser.add_option("-o", "--filename", type="string",default="",
-       metavar="NAME", help="save images as NAME-full.png,NAME-thumb.png etc")
-    cmdparser.add_option("-F", "--fullsize", action="store_true",
-       help="only create fullsize screenshot")
-    cmdparser.add_option("-T", "--thumb", action="store_true",
-       help="only create thumbnail sreenshot")
-    cmdparser.add_option("-C", "--clipped", action="store_true",
-       help="only create clipped thumbnail screenshot")
-    cmdparser.add_option("-d", "--datestamp", action="store_true",
-       help="include date in filename")
-    cmdparser.add_option("-D", "--dir",type="string",default="./",
-       help="directory to place images into")
-    cmdparser.add_option("--delay",type="float",default=0,
-       help="delay between page load finishing and screenshot")
-    cmdparser.add_option("--noimages", action="store_true",
-       help="don't load images")
-    cmdparser.add_option("--transparent", action="store_true",
-       help="render output on a transparent background (be sure to have a transparent background defined in the html)", default=False)
-    cmdparser.add_option("--nojs", action="store_true",
-       help="disable JavaScript support")
-    cmdparser.add_option("--user-agent", type="string", default=False,
-       help="set user agent header")
     cmdparser.add_option("--debug", action="store_true",
        help=optparse.SUPPRESS_HELP)
-    cmdparser.add_option("--js", type="string", default=None,
-       help="JavaScript to execute when the window finishes loading")
+
+    group = optparse.OptionGroup(cmdparser, "Browser Window Options")
+    group.add_option("-W", "--width",type="float",default=800.0,
+       help="initial (and minimum) width of browser (default: 800)")
+    group.add_option("-H", "--height",type="float",default=600.0,
+       help="initial (and minimum) height of browser (default: 600)")
+    group.add_option("-z", "--zoom",type="float",default=1.0,
+       help="zoom level of browser, equivalent to \"Zoom In\" and \"Zoom Out\" in \"View\" menu (default: 1.0)")
+    cmdparser.add_option_group(group)
+
+    group = optparse.OptionGroup(cmdparser, "Output size options")
+    group.add_option("-F", "--fullsize", action="store_true",
+       help="only create fullsize screenshot")
+    group.add_option("-T", "--thumb", action="store_true",
+       help="only create thumbnail sreenshot")
+    group.add_option("-C", "--clipped", action="store_true",
+       help="only create clipped thumbnail screenshot")
+    group.add_option("--clipwidth",type="float",default=200.0,
+       help="width of clipped thumbnail (default: 200)",
+       metavar="WIDTH")
+    group.add_option("--clipheight",type="float",default=150.0,
+       help="height of clipped thumbnail (default: 150)",
+       metavar="HEIGHT")
+    group.add_option("-s", "--scale",type="float",default=0.25,
+       help="scale factor for thumbnails (default: 0.25)")
+    cmdparser.add_option_group(group)
+
+    group = optparse.OptionGroup(cmdparser, "Output filename options")
+    group.add_option("-D", "--dir",type="string",default="./",
+       help="directory to place images into")
+    group.add_option("-o", "--filename", type="string",default="",
+       metavar="NAME", help="save images as NAME-full.png,NAME-thumb.png etc")
+    group.add_option("-m", "--md5", action="store_true",
+       help="use md5 hash for filename (like del.icio.us)")
+    group.add_option("-d", "--datestamp", action="store_true",
+       help="include date in filename")
+    cmdparser.add_option_group(group)
+
+    group = optparse.OptionGroup(cmdparser, "Web page functionality")
+    group.add_option("--delay",type="float",default=0,
+       help="delay between page load finishing and screenshot")
+    group.add_option("--js", type="string", default=None,
+       help="JavaScript to execute when the window finishes loading (example: --js='document.bgColor=\"red\";')")
+    group.add_option("--noimages", action="store_true",
+       help="don't load images")
+    group.add_option("--nojs", action="store_true",
+       help="disable JavaScript support")
+    group.add_option("--transparent", action="store_true",
+       help="render output on a transparent background (requires a web page with a transparent background)", default=False)
+    group.add_option("--user-agent", type="string", default=False,
+       help="set user agent header")
+    cmdparser.add_option_group(group)
+
     (options, args) = cmdparser.parse_args()
     if len(args) == 0:
         cmdparser.print_usage()

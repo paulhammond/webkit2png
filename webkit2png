@@ -25,7 +25,7 @@ __version__ = "0.6 beta"
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-                
+
 import sys
 import optparse
 
@@ -36,9 +36,7 @@ try:
   import objc
 except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
-  sys.exit() 
-
-
+  sys.exit()
 
 class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up
@@ -151,20 +149,27 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             webview.setDrawsBackground_(objc.NO)
 
         webview.setFrame_(rect)
-    
-    def resizeWebview(self,view):
-        view.window().display()
-        view.window().setContentSize_(view.bounds().size)
-        view.setFrame_(view.bounds())
 
     def captureView(self,view):
+        bounds = view.bounds()
+        if bounds.size.height > self.options.UNSAFE_max_height:
+            print >> sys.stderr, "Error: page height greater than %s, clipping to avoid crashing windowserver." % self.options.UNSAFE_max_height
+            bounds.size.height = self.options.UNSAFE_max_height
+        if bounds.size.width > self.options.UNSAFE_max_width:
+            print >> sys.stderr, "Error: page width greater than %s, clipping to avoid crashing windowserver." % self.options.UNSAFE_max_width
+            bounds.size.width = self.options.UNSAFE_max_width
+
+        view.window().display()
+        view.window().setContentSize_(Foundation.NSSize(bounds.size.width, self.options.initHeight))
+        view.setFrame_(bounds)
+
         if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):
-            bitmapdata = view.bitmapImageRepForCachingDisplayInRect_(view.bounds())
-            view.cacheDisplayInRect_toBitmapImageRep_(view.bounds(), bitmapdata)
+            bitmapdata = view.bitmapImageRepForCachingDisplayInRect_(bounds)
+            view.cacheDisplayInRect_toBitmapImageRep_(bounds, bitmapdata)
         else:
             view.lockFocus()
             bitmapdata = AppKit.NSBitmapImageRep.alloc()
-            bitmapdata.initWithFocusedViewRect_(view.bounds())
+            bitmapdata.initWithFocusedViewRect_(bounds)
             view.unlockFocus()
         return bitmapdata
 
@@ -180,8 +185,6 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def doGrab(self,timer):
             webview = timer.userInfo()
             view = webview.mainFrame().frameView().documentView()
-            
-            self.resizeWebview(view)
 
             URL = webview.mainFrame().dataSource().initialRequest().URL().absoluteString()
             filename = self.makeFilename(URL, self.options) 
@@ -210,6 +213,12 @@ Examples:
     cmdparser = optparse.OptionParser(usage,version=("webkit2png "+__version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("--debug", action="store_true",
+       help=optparse.SUPPRESS_HELP)
+
+    # warning: setting these too high can crash your window server
+    cmdparser.add_option("--UNSAFE-max-height", type="int",default=30000,
+       help=optparse.SUPPRESS_HELP)
+    cmdparser.add_option("--UNSAFE-max-width", type="int",default=30000,
        help=optparse.SUPPRESS_HELP)
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")

@@ -41,10 +41,23 @@ except ImportError:
 def cookiesFromFile(filename, url):
   import cookielib
   import urllib2
+  import tempfile
+  import os
+
+  tmp = tempfile.NamedTemporaryFile(delete=False)
+  tmp.write("# Netscape HTTP Cookie File\n")
+  real = open(filename, "r")
+  while 1:
+    line = real.readline()
+    if line:
+      tmp.write(line)
+    else:
+      break
+  tmp.close()
 
   req = urllib2.Request(url)
 
-  jar = cookielib.MozillaCookieJar(filename)
+  jar = cookielib.MozillaCookieJar(tmp.name)
   jar.load()
   jar.add_cookie_header(req)
 
@@ -52,6 +65,7 @@ def cookiesFromFile(filename, url):
   if not cookie:
     cookie = ""
 
+  os.unlink(tmp.name)
   return cookie
 
 class AppDelegate (Foundation.NSObject):

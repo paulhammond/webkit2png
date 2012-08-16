@@ -41,39 +41,38 @@ except ImportError:
 # given a cookie filename and a url, return the value for an HTTP cookie
 # header
 def cookieFromFile(filename, url):
-  import cookielib
-  import urllib2
-  import tempfile
-  import os
+    import cookielib
+    import urllib2
+    import tempfile
+    import os
 
-  # cookielib won't even look at the rest of a cookie file if the first line
-  # doesn't match a particular regex:
-  #     magic_re = "#( Netscape)? HTTP Cookie File"
-  # so we use a tempfile to guarantee this silly check
-  tmp = tempfile.NamedTemporaryFile(delete=False)
-  tmp.write("# Netscape HTTP Cookie File\n")
-  real = open(filename, "r")
-  while 1:
-    line = real.readline()
-    if line:
-      tmp.write(line)
-    else:
-      break
-  tmp.close()
+    # cookielib won't even look at the rest of a cookie file if the first line
+    # doesn't match a particular regex, so we always guarantee the magic_re
+    # will succeed
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.write("# Netscape HTTP Cookie File\n")
+    real = open(filename, "r")
+    while 1:
+        line = real.readline()
+        if line:
+            tmp.write(line)
+        else:
+            break
+    tmp.close()
 
-  # we only need this Request() long enough to have cookielib set the Cookie
-  # header for us
-  req = urllib2.Request(url)
-  jar = cookielib.MozillaCookieJar(tmp.name)
-  jar.load()
-  jar.add_cookie_header(req)
+    # we only need this Request() long enough to have cookielib set the Cookie
+    # header for us, we never actually pass it urlopen() or the like
+    req = urllib2.Request(url)
+    jar = cookielib.MozillaCookieJar(tmp.name)
+    jar.load()
+    jar.add_cookie_header(req)
 
-  cookie = req.get_header("Cookie")
-  if not cookie:
-    cookie = ""
+    cookie = req.get_header("Cookie")
+    if not cookie:
+        cookie = ""
 
-  os.unlink(tmp.name)
-  return cookie
+    os.unlink(tmp.name)
+    return cookie
 
 class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up

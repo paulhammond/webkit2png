@@ -162,7 +162,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
 
         req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
-        req.setValue_forHTTPHeaderField_('name1=value1', 'Cookie')
+        if (self.options.cookieFile):
+            cookie = "name1=value1"
+            req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
         webview.mainFrame().loadRequest_(req)
 
         if not webview.mainFrame().provisionalDataSource():
@@ -321,6 +323,8 @@ Examples:
        help=optparse.SUPPRESS_HELP)
     group.add_option("--no-js", action="store_true",
        help="disable JavaScript support")
+    group.add_option("--cookies", type="string", metavar="FILENAME", dest="cookieFile",
+       help="specify a Netscape cookie file")
     group.add_option("--transparent", action="store_true",
        help="render output on a transparent background (requires a web page with a transparent background)", default=False)
     cmdparser.add_option_group(group)

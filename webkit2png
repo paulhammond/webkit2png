@@ -39,22 +39,18 @@ except ImportError:
   sys.exit()
 
 def cookiesFromFile(filename, url):
-  c = open(filename, 'r');
-  cookie = "";
+  import cookielib
+  import urllib2
 
-  while 1:
-    line = c.readline()
-    if len(line) == 0:
-      break
+  req = urllib2.Request(url)
 
-    # http://www.cookiecentral.com/faq/
-    import re
-    if not re.match(r'^\s*#', line):
-      fields = line.split();
-      if (len(fields) == 7):
-        if (cookie):
-          cookie += ';'
-        cookie += fields[5] + '=' + fields[6]
+  jar = cookielib.MozillaCookieJar(filename)
+  jar.load()
+  jar.add_cookie_header(req)
+
+  cookie = req.get_header("Cookie")
+  if not cookie:
+    cookie = ""
 
   return cookie
 
@@ -183,8 +179,12 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
         if (self.options.cookieFile):
-            cookie = cookiesFromFile(self.options.cookieFile, url)
-            req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
+            try:
+                cookie = cookiesFromFile(self.options.cookieFile, url)
+                req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
+            except:
+                print "cookie loading error: ", sys.exc_info()
+                AppKit.NSApplication.sharedApplication().terminate_(None)
         webview.mainFrame().loadRequest_(req)
 
         if not webview.mainFrame().provisionalDataSource():

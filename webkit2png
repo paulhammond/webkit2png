@@ -160,6 +160,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(), 'webkit2png')
 
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
+
+        req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
+        req.setValue_forHTTPHeaderField_('name1=value1', 'Cookie')
+        webview.mainFrame().loadRequest_(req)
+
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)

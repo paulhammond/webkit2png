@@ -38,12 +38,18 @@ except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
   sys.exit()
 
-def cookiesFromFile(filename, url):
+# given a cookie filename and a url, return the value for an HTTP cookie
+# header
+def cookieFromFile(filename, url):
   import cookielib
   import urllib2
   import tempfile
   import os
 
+  # cookielib won't even look at the rest of a cookie file if the first line
+  # doesn't match a particular regex:
+  #     magic_re = "#( Netscape)? HTTP Cookie File"
+  # so we use a tempfile to guarantee this silly check
   tmp = tempfile.NamedTemporaryFile(delete=False)
   tmp.write("# Netscape HTTP Cookie File\n")
   real = open(filename, "r")
@@ -55,8 +61,9 @@ def cookiesFromFile(filename, url):
       break
   tmp.close()
 
+  # we only need this Request() long enough to have cookielib set the Cookie
+  # header for us
   req = urllib2.Request(url)
-
   jar = cookielib.MozillaCookieJar(tmp.name)
   jar.load()
   jar.add_cookie_header(req)
@@ -194,7 +201,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
         if (self.options.cookieFile):
             try:
-                cookie = cookiesFromFile(self.options.cookieFile, url)
+                cookie = cookieFromFile(self.options.cookieFile, url)
                 req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
             except:
                 print "cookie loading error: ", sys.exc_info()

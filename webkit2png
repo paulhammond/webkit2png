@@ -38,6 +38,26 @@ except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
   sys.exit()
 
+def cookiesFromFile(filename, url):
+  c = open(filename, 'r');
+  cookie = "";
+
+  while 1:
+    line = c.readline()
+    if len(line) == 0:
+      break
+
+    # http://www.cookiecentral.com/faq/
+    import re
+    if not re.match(r'^\s*#', line):
+      fields = line.split();
+      if (len(fields) == 7):
+        if (cookie):
+          cookie += ';'
+        cookie += fields[5] + '=' + fields[6]
+
+  return cookie
+
 class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up
     def applicationDidFinishLaunching_(self, aNotification):
@@ -163,7 +183,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
         if (self.options.cookieFile):
-            cookie = "name1=value1"
+            cookie = cookiesFromFile(self.options.cookieFile, url)
             req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
         webview.mainFrame().loadRequest_(req)
 
@@ -407,4 +427,3 @@ Examples:
     app.run()    
 
 if __name__ == '__main__' : main()
-

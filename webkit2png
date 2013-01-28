@@ -314,7 +314,7 @@ Examples:
     if options.height>0.0:
        options.initHeight = options.height
     else:
-       print "Width must be greater than zero"
+       print "Height must be greater than zero"
        return
       
     app = AppKit.NSApplication.sharedApplication()

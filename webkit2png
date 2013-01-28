@@ -223,9 +223,9 @@ Examples:
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
     group.add_option("-W", "--width",type="float",default=800.0,
-       help="initial (and minimum) width of browser (default: 800)")
+       help="initial width of browser (default: 800)")
     group.add_option("-H", "--height",type="float",default=600.0,
-       help="initial (and minimum) height of browser (default: 600)")
+       help="initial height of browser (default: 600)")
     group.add_option("-z", "--zoom",type="float",default=1.0,
        help="zoom level of browser, equivalent to \"Zoom In\" and \"Zoom Out\" in \"View\" menu (default: 1.0)")
     cmdparser.add_option_group(group)
@@ -306,10 +306,16 @@ Examples:
     options.initWidth = (options.clipwidth / options.scale)
     options.initHeight = (options.clipheight / options.scale)
     options.width *= options.zoom
-    if options.width>options.initWidth:
+    if options.width > 0.0:
        options.initWidth = options.width
-    if options.height>options.initHeight:
+    else:
+       print "Width must be greater than zero"
+       return
+    if options.height>0.0:
        options.initHeight = options.height
+    else:
+       print "Width must be greater than zero"
+       return
       
     app = AppKit.NSApplication.sharedApplication()
     

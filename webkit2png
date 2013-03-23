@@ -74,7 +74,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
        else:
          import re
          filename = re.sub('\W','',URL);
-         filename = re.sub('^http','',filename);
+         filename = re.sub('^https?','',filename);
        if options.datestamp:
          import time
          now = time.strftime("%Y%m%d")

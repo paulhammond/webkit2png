@@ -43,7 +43,7 @@ class AppDelegate (Foundation.NSObject):
     def applicationDidFinishLaunching_(self, aNotification):
         webview = aNotification.object().windows()[0].contentView()
         webview.frameLoadDelegate().getURL(webview)
-        self.performSelector_withObject_afterDelay_( "timeout:", None, 60 )
+        self.performSelector_withObject_afterDelay_( "timeout:", None, self.timeout )
 
     def timeout_(self, obj):
         Foundation.NSLog("timed out!")
@@ -221,6 +221,11 @@ Examples:
     cmdparser.add_option("--UNSAFE-max-width", type="int",default=30000,
        help=optparse.SUPPRESS_HELP)
 
+    group = optparse.OptionGroup(cmdparser, "Network Options")
+    group.add_option("--timeout",type="float",default=60.0,
+       help="page load timeout (default: 60)")
+    cmdparser.add_option_group(group)
+
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
     group.add_option("-W", "--width",type="float",default=800.0,
        help="initial (and minimum) width of browser (default: 800)")
@@ -315,6 +320,7 @@ Examples:
     
     # create an app delegate
     delegate = AppDelegate.alloc().init()
+    delegate.timeout = options.timeout
     AppKit.NSApp().setDelegate_(delegate)
 
     # create a window

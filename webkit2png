@@ -338,6 +338,9 @@ Examples:
 
     if options.user_agent:
       webview.setCustomUserAgent_(options.user_agent)
+    else:
+      webkit_version = Foundation.NSBundle.bundleForClass_(WebKit.WebView).objectForInfoDictionaryKey_(WebKit.kCFBundleVersionKey)[1:]
+      webview.setApplicationNameForUserAgent_("Safari/%s webkit2png/%s" % (webkit_version, __version__))
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.no_images)
     webview.preferences().setJavaScriptEnabled_(not options.no_js)

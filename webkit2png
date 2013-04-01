@@ -224,6 +224,8 @@ Examples:
     group = optparse.OptionGroup(cmdparser, "Network Options")
     group.add_option("--timeout",type="float",default=60.0,
        help="page load timeout (default: 60)")
+    group.add_option("--user-agent", type="string", default=False,
+       help="set user agent header")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
@@ -278,8 +280,6 @@ Examples:
        help="disable JavaScript support")
     group.add_option("--transparent", action="store_true",
        help="render output on a transparent background (requires a web page with a transparent background)", default=False)
-    group.add_option("--user-agent", type="string", default=False,
-       help="set user agent header")
     cmdparser.add_option_group(group)
 
     (options, args) = cmdparser.parse_args()

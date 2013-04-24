@@ -49,6 +49,28 @@ class AppDelegate (Foundation.NSObject):
         Foundation.NSLog("timed out!")
         AppKit.NSApplication.sharedApplication().terminate_(None)
 
+
+class Webkit2PngScriptBridge(Foundation.NSObject):
+    def init(self):
+        self = super(Webkit2PngScriptBridge, self).init()
+        self.is_stopped = False
+        self.start_callback = False
+        return self
+
+    def stop(self):
+        self.is_stopped = True
+
+    def start(self):
+        self.is_stopped = False
+        self.start_callback()
+
+    def isSelectorExcludedFromWebScript_(self, sel):
+        if sel in ['stop', 'start']:
+            return False
+        else:
+            return True
+
+
 class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     # what happens if something goes wrong while loading
@@ -133,6 +155,10 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             AppKit.NSApplication.sharedApplication().terminate_(None)
         print "Fetching", url, "..."
         self.resetWebview(webview)
+
+        scriptobject = webview.windowScriptObject()
+        scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(), 'webkit2png')
+
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
@@ -177,10 +203,19 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def webView_didFinishLoadForFrame_(self,webview,frame):
         # don't care about subframes
         if (frame == webview.mainFrame()):
+            scriptobject = webview.windowScriptObject()
             if self.options.js:
-                scriptobject = webview.windowScriptObject()
                 scriptobject.evaluateWebScript_(self.options.js)
-            Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_( self.options.delay, self, self.doGrab, webview, False)
+
+            bridge = scriptobject.valueForKey_('webkit2png')
+
+            def doGrab():
+                Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_( self.options.delay, self, self.doGrab, webview, False)
+
+            if bridge.is_stopped:
+                bridge.start_callback = doGrab
+            else:
+                doGrab()
 
     def doGrab(self,timer):
             webview = timer.userInfo()
@@ -269,7 +304,10 @@ Examples:
     group.add_option("--delay",type="float",default=0,
        help="delay between page load finishing and screenshot")
     group.add_option("--js", type="string", default=None,
-       help="JavaScript to execute when the window finishes loading (example: --js='document.bgColor=\"red\";')")
+       help="JavaScript to execute when the window finishes loading (example: --js='document.bgColor=\"red\";'). "
+            "If you need to wait for asynchronous code to finish before "
+            "capturing the screenshot, call webkit2png.stop() before the "
+            "async code runs, then webkit2png.start() to capture the image.")
     group.add_option("--noimages", action="store_true",
        help=optparse.SUPPRESS_HELP)
     group.add_option("--no-images", action="store_true",

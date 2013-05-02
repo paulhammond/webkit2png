@@ -33,6 +33,7 @@ try:
   import Foundation
   import WebKit
   import AppKit
+  import Quartz
   import objc
 except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
@@ -219,13 +220,43 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def doGrab(self,timer):
             webview = timer.userInfo()
-            view = webview.mainFrame().frameView().documentView()
+            frame = webview.mainFrame()
+            view = frame.frameView().documentView()
 
             URL = webview.mainFrame().dataSource().initialRequest().URL().absoluteString()
             filename = self.makeFilename(URL, self.options) 
 
             bitmapdata = self.captureView(view)  
-            self.saveImages(bitmapdata,filename,self.options)
+
+            if self.options.selector:
+                doc = frame.DOMDocument()
+                el = doc.querySelector_(self.options.selector)
+
+                if not el:
+                    print " ... no element matching %s found?"
+                    self.getURL(webview)
+                    return
+
+                left, top = 0, 0
+                parent = el
+                while parent:
+                    left += parent.offsetLeft()
+                    top += parent.offsetTop()
+                    parent = parent.offsetParent()
+
+                zoom = self.options.zoom
+
+                cropRect = Foundation.NSMakeRect(
+                        zoom * left, zoom * top,
+                        zoom * el.offsetWidth(), zoom * el.offsetHeight())
+
+                cropped = Quartz.CGImageCreateWithImageInRect(
+                        bitmapdata.CGImage(), cropRect)
+                bitmapdata = AppKit.NSBitmapImageRep.alloc().initWithCGImage_(
+                        cropped)
+                Quartz.CGImageRelease(cropped)
+
+            self.saveImages(bitmapdata, filename, self.options)
 
             print " ... done"
             self.getURL(webview)
@@ -270,6 +301,9 @@ Examples:
        help="initial (and minimum) height of browser (default: 600)")
     group.add_option("-z", "--zoom",type="float",default=1.0,
        help="zoom level of browser, equivalent to \"Zoom In\" and \"Zoom Out\" in \"View\" menu (default: 1.0)")
+    group.add_option("--selector", type="string",
+       help="CSS selector for a single element to capture (first matching "
+       "element will used)")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Output size options")

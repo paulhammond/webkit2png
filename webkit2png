@@ -38,6 +38,42 @@ except ImportError:
   print "Cannot find pyobjc library files.  Are you sure it is installed?"
   sys.exit()
 
+# given a cookie filename and a url, return the value for an HTTP cookie
+# header
+def cookieFromFile(filename, url):
+    import cookielib
+    import urllib2
+    import tempfile
+    import os
+
+    # cookielib won't even look at the rest of a cookie file if the first line
+    # doesn't match a particular regex, so we always guarantee the magic_re
+    # will succeed
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.write("# Netscape HTTP Cookie File\n")
+    real = open(filename, "r")
+    while 1:
+        line = real.readline()
+        if line:
+            tmp.write(line)
+        else:
+            break
+    tmp.close()
+
+    # we only need this Request() long enough to have cookielib set the Cookie
+    # header for us, we never actually pass it urlopen() or the like
+    req = urllib2.Request(url)
+    jar = cookielib.MozillaCookieJar(tmp.name)
+    jar.load()
+    jar.add_cookie_header(req)
+
+    cookie = req.get_header("Cookie")
+    if not cookie:
+        cookie = ""
+
+    os.unlink(tmp.name)
+    return cookie
+
 class AppDelegate (Foundation.NSObject):
     # what happens when the app starts up
     def applicationDidFinishLaunching_(self, aNotification):
@@ -160,6 +196,17 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(), 'webkit2png')
 
         webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url)))
+
+        req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
+        if (self.options.cookieFile):
+            try:
+                cookie = cookieFromFile(self.options.cookieFile, url)
+                req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
+            except:
+                print "cookie loading error: ", sys.exc_info()
+                AppKit.NSApplication.sharedApplication().terminate_(None)
+        webview.mainFrame().loadRequest_(req)
+
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
@@ -316,6 +363,8 @@ Examples:
        help=optparse.SUPPRESS_HELP)
     group.add_option("--no-js", action="store_true",
        help="disable JavaScript support")
+    group.add_option("--cookies", type="string", metavar="FILENAME", dest="cookieFile",
+       help="specify a Netscape cookie file")
     group.add_option("--transparent", action="store_true",
        help="render output on a transparent background (requires a web page with a transparent background)", default=False)
     cmdparser.add_option_group(group)
@@ -398,4 +447,3 @@ Examples:
     app.run()    
 
 if __name__ == '__main__' : main()
-

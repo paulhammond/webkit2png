@@ -233,7 +233,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 el = doc.querySelector_(self.options.selector)
 
                 if not el:
-                    print " ... no element matching %s found?"
+                    print " ... no element matching %s found?" % self.options.selector
                     self.getURL(webview)
                     return
 
@@ -303,7 +303,7 @@ Examples:
        help="zoom level of browser, equivalent to \"Zoom In\" and \"Zoom Out\" in \"View\" menu (default: 1.0)")
     group.add_option("--selector", type="string",
        help="CSS selector for a single element to capture (first matching "
-       "element will used)")
+       "element will be used)")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Output size options")

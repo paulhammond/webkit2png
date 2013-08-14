@@ -196,13 +196,21 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(), 'webkit2png')
 
         req = Foundation.NSMutableURLRequest.requestWithURL_(Foundation.NSURL.URLWithString_(url))
-        if (self.options.cookieFile):
-            try:
-                cookie = cookieFromFile(self.options.cookieFile, url)
-                req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
-            except:
-                print "cookie loading error: ", sys.exc_info()
-                AppKit.NSApplication.sharedApplication().terminate_(None)
+
+        if self.options.cookieFile or self.options.cookieData:
+            cookie = ''
+            if self.options.cookieFile:
+                try:
+                    cookie = cookieFromFile(self.options.cookieFile, url)
+                except:
+                    print "cookie loading error: ", sys.exc_info()
+                    AppKit.NSApplication.sharedApplication().terminate_(None)
+            if self.options.cookieData:
+                if cookie:
+                    cookie += '; '
+                cookie += '; '.join(self.options.cookieData)
+
+            req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
 
         webview.mainFrame().loadRequest_(req)
 
@@ -362,8 +370,10 @@ Examples:
        help=optparse.SUPPRESS_HELP)
     group.add_option("--no-js", action="store_true",
        help="disable JavaScript support")
-    group.add_option("--cookies", type="string", metavar="FILENAME", dest="cookieFile",
+    group.add_option("--cookie-file", type="string", metavar="FILENAME", dest="cookieFile",
        help="specify a Netscape cookie file")
+    group.add_option("--cookie", type="string", metavar="NAME=VALUE", dest="cookieData", action="append",
+       help="specify a cookie name-value pair (multiple --cookie is allowed)")
     group.add_option("--transparent", action="store_true",
        help="render output on a transparent background (requires a web page with a transparent background)", default=False)
     cmdparser.add_option_group(group)

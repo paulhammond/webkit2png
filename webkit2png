@@ -99,8 +99,8 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             filename = md5.new(URL).hexdigest()
         else:
             import re
-            filename = re.sub('^https?', '', filename)
-            filename = re.sub('\W', '', URL)
+            filename = re.sub('^https?', '', URL)
+            filename = re.sub('\W', '', filename)
         if options.datestamp:
             import time
             now = time.strftime("%Y%m%d")

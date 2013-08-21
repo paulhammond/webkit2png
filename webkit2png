@@ -433,6 +433,11 @@ Examples:
         options.clipped = True
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
+
+    if options.width*options.zoom < options.clipwidth/options.scale:
+        # auto adjust scale to produce clipwidth
+        options.scale = options.clipwidth / (options.width * options.zoom)
+
     options.initWidth = (options.clipwidth / options.scale)
     options.initHeight = (options.clipheight / options.scale)
     options.width *= options.zoom

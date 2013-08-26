@@ -470,7 +470,7 @@ Examples:
         webkit_version = Foundation.NSBundle.bundleForClass_(WebKit.WebView)\
             .objectForInfoDictionaryKey_(WebKit.kCFBundleVersionKey)[1:]
         webview.setApplicationNameForUserAgent_(
-            "Safari/%s webkit2png/%s" % (webkit_version, __version__))
+            "Like-Version/6.0 Safari/%s webkit2png/%s" % (webkit_version, __version__))
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.no_images)
     webview.preferences().setJavaScriptEnabled_(not options.no_js)

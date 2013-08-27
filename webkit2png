@@ -28,6 +28,8 @@ __version__ = "dev"
 
 import sys
 import optparse
+import re
+import os
 
 try:
     import Foundation
@@ -98,14 +100,12 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 AppKit.NSApplication.sharedApplication().terminate_(None)
             filename = md5.new(URL).hexdigest()
         else:
-            import re
             filename = re.sub('^https?', '', URL)
             filename = re.sub('\W', '', filename)
         if options.datestamp:
             import time
             now = time.strftime("%Y%m%d")
             filename = now + "-" + filename
-        import os
         dir = os.path.abspath(os.path.expanduser(options.dir))
         if not os.path.exists(options.dir):
             os.makedirs(dir)
@@ -166,16 +166,20 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 url = self.urls.pop(0)
         else:
             AppKit.NSApplication.sharedApplication().terminate_(None)
-        print "Fetching", url, "..."
-        self.resetWebview(webview)
 
+        nsurl = Foundation.NSURL.URLWithString_(url)
+        if not (nsurl and nsurl.scheme()):
+                nsurl = Foundation.NSURL.alloc().initFileURLWithPath_(url)
+        nsurl = nsurl.absoluteURL()
+
+        print "Fetching", nsurl, "..."
+        self.resetWebview(webview)
         scriptobject = webview.windowScriptObject()
         scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(),
                                       'webkit2png')
 
         webview.mainFrame().loadRequest_(
-            Foundation.NSURLRequest.requestWithURL_(
-                Foundation.NSURL.URLWithString_(url)))
+            Foundation.NSURLRequest.requestWithURL_(nsurl))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
@@ -300,6 +304,7 @@ Examples:
 %prog -TF http://google.com/        # just thumbnail and fullsize grab
 %prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
 %prog -                             # screengrab urls from stdin
+%prog /path/to/file.html            # screengrab local html file
 %prog -h | less                     # full documentation"""
 
     cmdparser = optparse.OptionParser(usage,

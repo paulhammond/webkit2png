@@ -174,6 +174,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 nsurl = Foundation.NSURL.alloc().initFileURLWithPath_(url)
         nsurl = nsurl.absoluteURL()
 
+        if self.options.ignore_ssl_check:
+            Foundation.NSURLRequest.setAllowsAnyHTTPSCertificate_forHost_(objc.YES, nsurl.host())
+
         print "Fetching", nsurl, "..."
         self.resetWebview(webview)
         scriptobject = webview.windowScriptObject()
@@ -326,6 +329,8 @@ Examples:
                      help="page load timeout (default: 60)")
     group.add_option("--user-agent", type="string", default=False,
                      help="set user agent header")
+    group.add_option("--ignore-ssl-check", action="store_true", default=False,
+                     help="ignore SSL Certificate name mismatches")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")

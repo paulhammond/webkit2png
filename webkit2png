@@ -441,8 +441,8 @@ Examples:
     # make sure we're outputing something
     if not (options.fullsize or options.thumb or options.clipped):
         options.fullsize = True
-        options.thumb = True
-        options.clipped = True
+        # options.thumb = True
+        # options.clipped = True
     # work out the initial size of the browser window
     #  (this might need to be larger so clipped image is right size)
     options.initWidth = (options.clipwidth / options.scale)

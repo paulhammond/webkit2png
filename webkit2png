@@ -469,10 +469,14 @@ Examples:
         "--transparent", action="store_true",
         help="render output on a transparent background (requires a web "
         "page with a transparent background)", default=False)
-    group.add_option("--cookie-file", type="string", metavar="FILENAME", dest="cookieFile",
-       help="specify a Netscape cookie file")
-    group.add_option("--cookie", type="string", metavar="NAME=VALUE", dest="cookieData", action="append",
-       help="specify a cookie name-value pair (multiple --cookie is allowed)")
+    group.add_option(
+        "--cookie-file", type="string", dest="cookieFile",
+        help="specify a Netscape cookie file",
+        metavar="FILENAME")
+    group.add_option(
+        "--cookie", action="append", type="string", dest="cookieData",
+        help="specify a cookie name-value pair (multiple --cookie is allowed)",
+        metavar="NAME=VALUE")
     cmdparser.add_option_group(group)
 
     (options, args) = cmdparser.parse_args()

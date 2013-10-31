@@ -226,7 +226,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             cookie = ''
             if self.options.cookieFile:
                 try:
-                    cookie = cookieFromFile(self.options.cookieFile, nsurl)
+                    cookie = cookieFromFile(self.options.cookieFile, str(nsurl))
                 except:
                     print "cookie loading error: ", sys.exc_info()
                     AppKit.NSApplication.sharedApplication().terminate_(None)

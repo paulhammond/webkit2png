@@ -202,6 +202,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             req.setValue_forHTTPHeaderField_(cookie, 'Cookie')
 
+        if self.options.no_cookies:
+            req.setValue_forHTTPHeaderField_('', 'Cookie')
+
         webview.mainFrame().loadRequest_(req)
 
         if not webview.mainFrame().provisionalDataSource():
@@ -442,6 +445,10 @@ Examples:
         "--cookie", action="append", type="string", dest="cookieData",
         help="specify a cookie name-value pair (multiple --cookie is allowed)",
         metavar="NAME=VALUE")
+    group.add_option(
+        "--no-cookies", action="store_true",
+        help="explicitly empty the Cookie: header (Safari's cookies are used by default)")
+
     cmdparser.add_option_group(group)
 
     (options, args) = cmdparser.parse_args()

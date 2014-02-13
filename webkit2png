@@ -83,14 +83,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         if error.code() == Foundation.NSURLErrorCancelled:
             return
         print " ... something went wrong: "+error.localizedDescription()
-        self.getURL(webview)
+        AppKit.NSApplication.sharedApplication().terminate_(None)
 
     def webView_didFailProvisionalLoadWithError_forFrame_(self, webview, error,
                                                           frame):
         if error.code() == Foundation.NSURLErrorCancelled:
             return
         print " ... something went wrong: "+error.localizedDescription()
-        self.getURL(webview)
+        AppKit.NSApplication.sharedApplication().terminate_(None)
 
     def makeFilename(self, URL, options):
         # make the filename
@@ -161,19 +161,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                         filename + "-clipped.png", objc.YES)
 
     def getURL(self, webview):
-        if self.urls:
-            if self.urls[0] == '-':
-                url = sys.stdin.readline().rstrip()
-                if not url:
-                    AppKit.NSApplication.sharedApplication().terminate_(None)
-            else:
-                url = self.urls.pop(0)
-        else:
-            AppKit.NSApplication.sharedApplication().terminate_(None)
-
-        nsurl = Foundation.NSURL.URLWithString_(url)
+        nsurl = Foundation.NSURL.URLWithString_(self.url)
         if not (nsurl and nsurl.scheme()):
-                nsurl = Foundation.NSURL.alloc().initFileURLWithPath_(url)
+                nsurl = Foundation.NSURL.alloc().initFileURLWithPath_(self.url)
         nsurl = nsurl.absoluteURL()
 
         if self.options.ignore_ssl_check:
@@ -189,7 +179,6 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             Foundation.NSURLRequest.requestWithURL_(nsurl))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
-            self.getURL(webview)
 
     def resetWebview(self, webview):
         rect = Foundation.NSMakeRect(0, 0, self.options.initWidth,
@@ -271,8 +260,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             if not el:
                 print " ... no element matching %s found?" % \
                     self.options.selector
-                self.getURL(webview)
-                return
+                AppKit.NSApplication.sharedApplication().terminate_(None)
 
             left, top = 0, 0
             parent = el
@@ -296,7 +284,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         self.saveImages(bitmapdata, filename, self.options)
 
         print " ... done"
-        self.getURL(webview)
+        AppKit.NSApplication.sharedApplication().terminate_(None)
 
 
 def main():
@@ -310,7 +298,6 @@ Examples:
 %prog -T http://google.com/         # just the thumbnail screengrab
 %prog -TF http://google.com/        # just thumbnail and fullsize grab
 %prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
-%prog -                             # screengrab urls from stdin
 %prog /path/to/file.html            # screengrab local html file
 %prog -h | less                     # full documentation"""
 
@@ -498,7 +485,7 @@ Examples:
     # create a LoadDelegate
     loaddelegate = WebkitLoad.alloc().init()
     loaddelegate.options = options
-    loaddelegate.urls = args
+    loaddelegate.url = args[0]
     webview.setFrameLoadDelegate_(loaddelegate)
 
     app.run()

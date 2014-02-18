@@ -92,7 +92,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         print " ... something went wrong: "+error.localizedDescription()
         AppKit.NSApplication.sharedApplication().terminate_(None)
 
-    def makeFilename(self, URL, options):
+    def makeFilename(self, URL, options, width):
         # make the filename
         if options.filename:
             filename = options.filename
@@ -110,6 +110,8 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             import time
             now = time.strftime("%Y%m%d")
             filename = now + "-" + filename
+        if len(options.width) > 1:
+            filename = "%s-%s" % ( filename, width )
         dir = os.path.abspath(os.path.expanduser(options.dir))
         if not os.path.exists(options.dir):
             os.makedirs(dir)
@@ -149,11 +151,12 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         webview.setFrame_(rect)
 
-    def captureView(self, view):
+    def captureView(self, frame, width):
+        view = frame.frameView().documentView()
         bounds = view.bounds()
 
         # enforce requested width even when page width is wider
-        bounds.size.width = self.options.width
+        bounds.size.width = width
 
         if bounds.size.height > self.options.UNSAFE_max_height:
             print >> sys.stderr, "Error: page height greater than %s, " \
@@ -169,6 +172,16 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         view.window().display()
         view.window().setContentSize_(
             Foundation.NSSize(bounds.size.width, self.options.initHeight))
+
+        # recalculate height when width changes
+        doc = frame.DOMDocument()
+        bounds.size.height=doc.height()
+        if bounds.size.height > self.options.UNSAFE_max_height:
+            print >> sys.stderr, "Error: page height greater than %s, " \
+                "clipping to avoid crashing windowserver." % \
+                self.options.UNSAFE_max_height
+            bounds.size.height = self.options.UNSAFE_max_height
+
         view.setFrame_(bounds)
 
         if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):
@@ -204,46 +217,48 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def doGrab(self, timer):
         webview = timer.userInfo()
         frame = webview.mainFrame()
-        view = frame.frameView().documentView()
 
         URL = webview.mainFrame().dataSource().initialRequest().URL()\
             .absoluteString()
-        filename = self.makeFilename(URL, self.options)
 
-        bitmapdata = self.captureView(view)
+        for width in self.options.width:
+            print 'Grabbing at width', width
 
-        if self.options.selector:
-            doc = frame.DOMDocument()
-            el = doc.querySelector_(self.options.selector)
+            filename = self.makeFilename(URL, self.options, width)
+            bitmapdata = self.captureView(frame, width)
 
-            if not el:
-                print " ... no element matching %s found?" % \
-                    self.options.selector
-                AppKit.NSApplication.sharedApplication().terminate_(None)
+            if self.options.selector:
+                doc = frame.DOMDocument()
+                el = doc.querySelector_(self.options.selector)
 
-            left, top = 0, 0
-            parent = el
-            while parent:
-                left += parent.offsetLeft()
-                top += parent.offsetTop()
-                parent = parent.offsetParent()
+                if not el:
+                    print " ... no element matching %s found?" % \
+                        self.options.selector
+                    AppKit.NSApplication.sharedApplication().terminate_(None)
 
-            zoom = self.options.zoom
+                left, top = 0, 0
+                parent = el
+                while parent:
+                    left += parent.offsetLeft()
+                    top += parent.offsetTop()
+                    parent = parent.offsetParent()
 
-            cropRect = Foundation.NSMakeRect(
-                zoom * left, zoom * top,
-                zoom * el.offsetWidth(), zoom * el.offsetHeight())
+                zoom = self.options.zoom
 
-            cropped = Quartz.CGImageCreateWithImageInRect(
-                bitmapdata.CGImage(), cropRect)
-            bitmapdata = AppKit.NSBitmapImageRep.alloc().initWithCGImage_(
-                cropped)
-            Quartz.CGImageRelease(cropped)
+                cropRect = Foundation.NSMakeRect(
+                    zoom * left, zoom * top,
+                    zoom * el.offsetWidth(), zoom * el.offsetHeight())
 
-        bitmapdata.representationUsingType_properties_(
-            AppKit.NSPNGFileType,
-            None
-        ).writeToFile_atomically_(filename + ".png", objc.YES)
+                cropped = Quartz.CGImageCreateWithImageInRect(
+                    bitmapdata.CGImage(), cropRect)
+                bitmapdata = AppKit.NSBitmapImageRep.alloc().initWithCGImage_(
+                    cropped)
+                Quartz.CGImageRelease(cropped)
+
+            bitmapdata.representationUsingType_properties_(
+                AppKit.NSPNGFileType,
+                None
+            ).writeToFile_atomically_(filename + ".png", objc.YES)
 
         print " ... done"
         AppKit.NSApplication.sharedApplication().terminate_(None)
@@ -257,6 +272,7 @@ def main():
 Examples:
 %prog http://google.com/            # screengrab google
 %prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
+%prog -W 320 -W 640 http://google.com/   # screengrab google at two widths
 %prog -o foo http://google.com/     # save image as "foo.png"
 %prog /path/to/file.html            # screengrab local html file
 %prog -h | less                     # full documentation"""
@@ -284,8 +300,8 @@ Examples:
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
     group.add_option(
-        "-W", "--width", type="int", default=800,
-        help="width of browser (default: 800)")
+        "-W", "--width", type="int", action="append",
+        help="width(s) of browser (default: 800)")
     group.add_option(
         "-H", "--height", type="int", default=600,
         help="initial (and minimum) height of browser (default: 600)")
@@ -302,10 +318,11 @@ Examples:
     group = optparse.OptionGroup(cmdparser, "Output filename options")
     group.add_option(
         "-D", "--dir", type="string", default="./",
-        help="directory to place image into")
+        help="directory to place image(s) into")
     group.add_option(
         "-o", "--filename", type="string", default="",
-        metavar="NAME", help="save image as NAME.png")
+        metavar="NAME", help="save image(s) as NAME.png"
+        " (or NAME-WIDTH.PNG for multiple widths)")
     group.add_option(
         "-m", "--md5", action="store_true",
         help="use md5 hash for filename (like del.icio.us)")
@@ -363,7 +380,9 @@ Examples:
         options.no_images = True
 
     # work out the initial size of the browser window
-    options.initWidth = options.width
+    if options.width is None:
+        options.width = [ 800, ]
+    options.initWidth = options.width[0]
     options.initHeight = options.height
 
     # Hide the dock icon (needs to run before NSApplication.sharedApplication)

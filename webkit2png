@@ -115,51 +115,6 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             os.makedirs(dir)
         return os.path.join(dir, filename)
 
-    def saveImages(self, bitmapdata, filename, options):
-        # save the fullsize png
-        if options.fullsize:
-            bitmapdata.representationUsingType_properties_(
-                AppKit.NSPNGFileType,
-                None
-            ).writeToFile_atomically_(filename + "-full.png", objc.YES)
-
-        if options.thumb or options.clipped:
-            # work out how big the thumbnail is
-            width = bitmapdata.pixelsWide()
-            height = bitmapdata.pixelsHigh()
-            thumbWidth = (width * options.scale)
-            thumbHeight = (height * options.scale)
-
-            # make the thumbnails in a scratch image
-            scratch = AppKit.NSImage.alloc().initWithSize_(
-                Foundation.NSMakeSize(thumbWidth, thumbHeight))
-            scratch.lockFocus()
-            AppKit.NSGraphicsContext.currentContext().setImageInterpolation_(
-                AppKit.NSImageInterpolationHigh)
-            thumbRect = Foundation.NSMakeRect(0.0, 0.0, thumbWidth,
-                                              thumbHeight)
-            clipRect = Foundation.NSMakeRect(
-                0.0,
-                thumbHeight-options.clipheight,
-                options.clipwidth,
-                options.clipheight)
-            bitmapdata.drawInRect_(thumbRect)
-            thumbOutput = AppKit.NSBitmapImageRep.alloc()\
-                .initWithFocusedViewRect_(thumbRect)
-            clipOutput = AppKit.NSBitmapImageRep.alloc()\
-                .initWithFocusedViewRect_(clipRect)
-            scratch.unlockFocus()
-
-            # save the thumbnails as pngs
-            if options.thumb:
-                thumbOutput.representationUsingType_properties_(
-                    AppKit.NSPNGFileType, None).writeToFile_atomically_(
-                        filename + "-thumb.png", objc.YES)
-            if options.clipped:
-                clipOutput.representationUsingType_properties_(
-                    AppKit.NSPNGFileType, None).writeToFile_atomically_(
-                        filename + "-clipped.png", objc.YES)
-
     def getURL(self, webview):
         nsurl = Foundation.NSURL.URLWithString_(self.url)
         if not (nsurl and nsurl.scheme()):
@@ -196,6 +151,10 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     def captureView(self, view):
         bounds = view.bounds()
+
+        # enforce requested width even when page width is wider
+        bounds.size.width = self.options.width
+
         if bounds.size.height > self.options.UNSAFE_max_height:
             print >> sys.stderr, "Error: page height greater than %s, " \
                 "clipping to avoid crashing windowserver." % \
@@ -281,7 +240,10 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 cropped)
             Quartz.CGImageRelease(cropped)
 
-        self.saveImages(bitmapdata, filename, self.options)
+        bitmapdata.representationUsingType_properties_(
+            AppKit.NSPNGFileType,
+            None
+        ).writeToFile_atomically_(filename + ".png", objc.YES)
 
         print " ... done"
         AppKit.NSApplication.sharedApplication().terminate_(None)
@@ -295,9 +257,7 @@ def main():
 Examples:
 %prog http://google.com/            # screengrab google
 %prog -W 1000 -H 1000 http://google.com/ # bigger screengrab of google
-%prog -T http://google.com/         # just the thumbnail screengrab
-%prog -TF http://google.com/        # just thumbnail and fullsize grab
-%prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
+%prog -o foo http://google.com/     # save image as "foo.png"
 %prog /path/to/file.html            # screengrab local html file
 %prog -h | less                     # full documentation"""
 
@@ -324,10 +284,10 @@ Examples:
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
     group.add_option(
-        "-W", "--width", type="float", default=800.0,
-        help="initial (and minimum) width of browser (default: 800)")
+        "-W", "--width", type="int", default=800,
+        help="width of browser (default: 800)")
     group.add_option(
-        "-H", "--height", type="float", default=600.0,
+        "-H", "--height", type="int", default=600,
         help="initial (and minimum) height of browser (default: 600)")
     group.add_option(
         "-z", "--zoom", type="float", default=1.0,
@@ -339,36 +299,13 @@ Examples:
         "element will be used)")
     cmdparser.add_option_group(group)
 
-    group = optparse.OptionGroup(cmdparser, "Output size options")
-    group.add_option(
-        "-F", "--fullsize", action="store_true",
-        help="only create fullsize screenshot")
-    group.add_option(
-        "-T", "--thumb", action="store_true",
-        help="only create thumbnail sreenshot")
-    group.add_option(
-        "-C", "--clipped", action="store_true",
-        help="only create clipped thumbnail screenshot")
-    group.add_option(
-        "--clipwidth", type="float", default=200.0,
-        help="width of clipped thumbnail (default: 200)",
-        metavar="WIDTH")
-    group.add_option(
-        "--clipheight", type="float", default=150.0,
-        help="height of clipped thumbnail (default: 150)",
-        metavar="HEIGHT")
-    group.add_option(
-        "-s", "--scale", type="float", default=0.25,
-        help="scale factor for thumbnails (default: 0.25)")
-    cmdparser.add_option_group(group)
-
     group = optparse.OptionGroup(cmdparser, "Output filename options")
     group.add_option(
         "-D", "--dir", type="string", default="./",
-        help="directory to place images into")
+        help="directory to place image into")
     group.add_option(
         "-o", "--filename", type="string", default="",
-        metavar="NAME", help="save images as NAME-full.png,NAME-thumb.png etc")
+        metavar="NAME", help="save image as NAME.png")
     group.add_option(
         "-m", "--md5", action="store_true",
         help="use md5 hash for filename (like del.icio.us)")
@@ -425,22 +362,9 @@ Examples:
             'webkit2png 1.0. Please use --no-images.'
         options.no_images = True
 
-    if options.scale == 0:
-        cmdparser.error("scale cannot be zero")
-    # make sure we're outputing something
-    if not (options.fullsize or options.thumb or options.clipped):
-        options.fullsize = True
-        options.thumb = True
-        options.clipped = True
     # work out the initial size of the browser window
-    #  (this might need to be larger so clipped image is right size)
-    options.initWidth = (options.clipwidth / options.scale)
-    options.initHeight = (options.clipheight / options.scale)
-    options.width *= options.zoom
-    if options.width > options.initWidth:
-        options.initWidth = options.width
-    if options.height > options.initHeight:
-        options.initHeight = options.height
+    options.initWidth = options.width
+    options.initHeight = options.height
 
     # Hide the dock icon (needs to run before NSApplication.sharedApplication)
     AppKit.NSBundle.mainBundle().infoDictionary()['LSBackgroundOnly'] = '1'

@@ -283,9 +283,9 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             zoom = self.options.zoom
 
-            cropRect = Foundation.NSMakeRect(
+            cropRect = view.window().convertRectToBacking_(Foundation.NSMakeRect(
                 zoom * left, zoom * top,
-                zoom * el.offsetWidth(), zoom * el.offsetHeight())
+                zoom * el.offsetWidth(), zoom * el.offsetHeight()))
 
             cropped = Quartz.CGImageCreateWithImageInRect(
                 bitmapdata.CGImage(), cropRect)

@@ -220,7 +220,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         view.window().display()
         view.window().setContentSize_(
-            Foundation.NSSize(bounds.size.width, self.options.initHeight))
+            Foundation.NSSize(self.options.initWidth, self.options.initHeight))
         view.setFrame_(bounds)
 
         if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):

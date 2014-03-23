@@ -115,7 +115,18 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             os.makedirs(dir)
         return os.path.join(dir, filename)
 
+    def writePasteboard(self,bitmapdata):
+        pb = AppKit.NSPasteboard.generalPasteboard()
+        pb.clearContents()
+        pb.setData_forType_(bitmapdata.representationUsingType_properties_(
+            AppKit.NSPNGFileType,None), AppKit.NSPasteboardTypePNG)
+
     def saveImages(self, bitmapdata, filename, options):
+        # output to pasteboard only
+        if not (options.fullsize or options.thumb or options.clipped) and options.pasteboard:
+            self.writePasteboard(bitmapdata)
+            return
+
         # save the fullsize png
         if options.fullsize:
             bitmapdata.representationUsingType_properties_(
@@ -150,12 +161,16 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 .initWithFocusedViewRect_(clipRect)
             scratch.unlockFocus()
 
-            # save the thumbnails as pngs
-            if options.thumb:
+            # save the thumbnails to the pasteboard or as pngs
+            if options.pasteboard and options.thumb:
+                self.writePasteboard(thumbOutput)
+            elif options.thumb:
                 thumbOutput.representationUsingType_properties_(
                     AppKit.NSPNGFileType, None).writeToFile_atomically_(
                         filename + "-thumb.png", objc.YES)
-            if options.clipped:
+            if options.pasteboard and options.clipped:
+                self.writePasteboard(clipOutput)
+            elif options.clipped:
                 clipOutput.representationUsingType_properties_(
                     AppKit.NSPNGFileType, None).writeToFile_atomically_(
                         filename + "-clipped.png", objc.YES)
@@ -375,6 +390,11 @@ Examples:
         help="scale factor for thumbnails (default: 0.25)")
     cmdparser.add_option_group(group)
 
+    group = optparse.OptionGroup(cmdparser, "Pasteboard output options")
+    group.add_option("-P", "--pasteboard", action="store_true",
+       help="output screenshot to pasteboard")
+    cmdparser.add_option_group(group)
+
     group = optparse.OptionGroup(cmdparser, "Output filename options")
     group.add_option(
         "-D", "--dir", type="string", default="./",
@@ -441,7 +461,7 @@ Examples:
     if options.scale == 0:
         cmdparser.error("scale cannot be zero")
     # make sure we're outputing something
-    if not (options.fullsize or options.thumb or options.clipped):
+    if not (options.fullsize or options.thumb or options.clipped or options.pasteboard):
         options.fullsize = True
         options.thumb = True
         options.clipped = True

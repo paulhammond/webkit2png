@@ -4,7 +4,7 @@ webkit2png is a command line tool that creates screenshots of webpages. For more
 
 ## Copy to Clipboard
 
-Introduces a new flag `-P` or `--pasteboard` that allows to copy the bitmadata to the clipboard.
+Introduces a new flag `-P` or `--pasteboard` that allows to copy the bitmapdata to the clipboard.
 
 - `-P` on its own copies the fullscreen 
 - `-P` together with `-T` or `-C` copies a thumb or clipped picture

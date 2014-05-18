@@ -3,7 +3,7 @@
 # webkit2png - makes screenshots of web pages
 # http://www.paulhammond.org/webkit2png
 
-__version__ = "0.7"
+__version__ = "0.8-dev"
 
 # Copyright (c) 2004-2014 Paul Hammond
 #

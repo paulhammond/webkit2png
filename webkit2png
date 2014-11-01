@@ -114,9 +114,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         return os.path.join(dir, filename)
 
     def saveImages(self, bitmapdata, filename, options):
+        only_one_file = [options.fullsize, options.thumb, options.clipped].count(True) == 1
         # save the fullsize png
         if options.fullsize:
-            bitmapdata.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-full.png", objc.YES)
+            output_name = filename + ("" if only_one_file else "-full.png")
+            bitmapdata.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(output_name, objc.YES)
 
         if options.thumb or options.clipped:
             # work out how big the thumbnail is
@@ -138,9 +140,11 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             # save the thumbnails as pngs
             if options.thumb:
-                thumbOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-thumb.png", objc.YES)
+                output_name = filename + ("" if only_one_file else "-thumb.png")
+                thumbOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(output_name, objc.YES)
             if options.clipped:
-                clipOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-clipped.png", objc.YES)
+                output_name = filename + ("" if only_one_file else "-clipped.png")
+                clipOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(output_name, objc.YES)
 
     def getURL(self, webview):
         if self.urls:

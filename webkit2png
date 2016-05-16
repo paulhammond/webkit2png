@@ -356,7 +356,7 @@ Examples:
     group = optparse.OptionGroup(cmdparser, "Web page functionality")
     group.add_option(
         "--delay", type="float", default=0,
-        help="delay between page load finishing and screenshot")
+        help="delay in seconds between page load finishing and screenshot")
     group.add_option(
         "--js", type="string", default=None,
         help="JavaScript to execute when the window finishes loading"

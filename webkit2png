@@ -75,7 +75,7 @@ class Webkit2PngScriptBridge(Foundation.NSObject):
             return True
 
 
-class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
+class WebkitLoad (Foundation.NSObject, objc.protocolNamed('WebFrameLoadDelegate')):
 
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self, webview, error, frame):
@@ -90,6 +90,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         print " ... something went wrong: "+error.localizedDescription()
         self.getURL(webview)
 
+    @objc.python_method
     def makeFilename(self, URL, options):
         # make the filename
         if options.filename:
@@ -113,6 +114,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             os.makedirs(dir)
         return os.path.join(dir, filename)
 
+    @objc.python_method
     def saveImages(self, bitmapdata, filename, options):
         # save the fullsize png
         if options.fullsize:
@@ -142,6 +144,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             if options.clipped:
                 clipOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-clipped.png", objc.YES)
 
+    @objc.python_method
     def getURL(self, webview):
         if self.urls:
             if self.urls[0] == '-':
@@ -171,6 +174,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             print " ... not a proper url?"
             self.getURL(webview)
 
+    @objc.python_method
     def resetWebview(self, webview):
         rect = Foundation.NSMakeRect(0, 0, self.options.initWidth, self.options.initHeight)
         window = webview.window()
@@ -183,6 +187,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         webview.setFrame_(rect)
 
+    @objc.python_method
     def captureView(self, view):
         bounds = view.bounds()
         if bounds.size.height > self.options.UNSAFE_max_height:
@@ -218,14 +223,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             bridge = scriptobject.valueForKey_('webkit2png')
 
             def doGrab():
-                Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(self.options.delay, self, self.doGrab, webview, False)
+                Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(self.options.delay, self, self.doGrab_, webview, False)
 
             if bridge.is_stopped:
                 bridge.start_callback = doGrab
             else:
                 doGrab()
 
-    def doGrab(self, timer):
+    def doGrab_(self, timer):
         webview = timer.userInfo()
         frame = webview.mainFrame()
         view = frame.frameView().documentView()
@@ -419,9 +424,11 @@ Examples:
     # Hide the dock icon (needs to run before NSApplication.sharedApplication)
     AppKit.NSBundle.mainBundle().infoDictionary()['LSBackgroundOnly'] = '1'
 
+
     app = AppKit.NSApplication.sharedApplication()
 
     # create an app delegate
+
     delegate = AppDelegate.alloc().init()
     delegate.timeout = options.timeout
     AppKit.NSApp().setDelegate_(delegate)

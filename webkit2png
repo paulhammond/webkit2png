@@ -419,6 +419,9 @@ Examples:
     # Hide the dock icon (needs to run before NSApplication.sharedApplication)
     AppKit.NSBundle.mainBundle().infoDictionary()['LSBackgroundOnly'] = '1'
 
+    # Allow loading HTTP pages
+    AppKit.NSBundle.mainBundle().infoDictionary()['NSAppTransportSecurity'] = dict(NSAllowsArbitraryLoads = True)
+
     app = AppKit.NSApplication.sharedApplication()
 
     # create an app delegate

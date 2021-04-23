@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# 
+# Copy screenshot made by webkit2png on clipboard
+# 
+# @author: Damien Cuvillier <damien@gotan.io>
+# @since 2021/04/23
+# 
+# Runs only on macos 
+
+command -v copyq > /dev/null
+
+if [[ $? -ne 0 ]] ; then
+	brew install copyq
+fi
+
+
+webkit2png -o /tmp/~export $@
+copyq write image/png - < /tmp/~export-full.png && copyq select 0
+rm /tmp/~export*.png
+
+echo "Screenshot is in your clipboard"

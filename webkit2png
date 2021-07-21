@@ -3,9 +3,9 @@
 # webkit2png - makes screenshots of web pages
 # http://www.paulhammond.org/webkit2png
 
-__version__ = "dev"
+__version__ = "0.8-dev"
 
-# Copyright (c) 2004-2013 Paul Hammond
+# Copyright (c) 2004-2014 Paul Hammond
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,8 @@ __version__ = "dev"
 
 import sys
 import optparse
+import re
+import os
 
 try:
     import Foundation
@@ -45,8 +47,7 @@ class AppDelegate(Foundation.NSObject):
     def applicationDidFinishLaunching_(self, aNotification):
         webview = aNotification.object().windows()[0].contentView()
         webview.frameLoadDelegate().getURL(webview)
-        self.performSelector_withObject_afterDelay_("timeout:", None,
-                                                    self.timeout)
+        self.performSelector_withObject_afterDelay_("timeout:", None, self.timeout)
 
     def timeout_(self, obj):
         Foundation.NSLog("timed out!")
@@ -78,11 +79,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
     # what happens if something goes wrong while loading
     def webView_didFailLoadWithError_forFrame_(self, webview, error, frame):
+        if error.code() == Foundation.NSURLErrorCancelled:
+            return
         print " ... something went wrong: "+error.localizedDescription()
         self.getURL(webview)
 
-    def webView_didFailProvisionalLoadWithError_forFrame_(self, webview, error,
-                                                          frame):
+    def webView_didFailProvisionalLoadWithError_forFrame_(self, webview, error, frame):
+        if error.code() == Foundation.NSURLErrorCancelled:
+            return
         print " ... something went wrong: "+error.localizedDescription()
         self.getURL(webview)
 
@@ -98,14 +102,12 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 AppKit.NSApplication.sharedApplication().terminate_(None)
             filename = md5.new(URL).hexdigest()
         else:
-            import re
             filename = re.sub('^https?', '', URL)
             filename = re.sub('\W', '', filename)
         if options.datestamp:
             import time
             now = time.strftime("%Y%m%d")
             filename = now + "-" + filename
-        import os
         dir = os.path.abspath(os.path.expanduser(options.dir))
         if not os.path.exists(options.dir):
             os.makedirs(dir)
@@ -114,10 +116,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def saveImages(self, bitmapdata, filename, options):
         # save the fullsize png
         if options.fullsize:
-            bitmapdata.representationUsingType_properties_(
-                AppKit.NSPNGFileType,
-                None
-            ).writeToFile_atomically_(filename + "-full.png", objc.YES)
+            bitmapdata.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-full.png", objc.YES)
 
         if options.thumb or options.clipped:
             # work out how big the thumbnail is
@@ -127,34 +126,21 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             thumbHeight = (height * options.scale)
 
             # make the thumbnails in a scratch image
-            scratch = AppKit.NSImage.alloc().initWithSize_(
-                Foundation.NSMakeSize(thumbWidth, thumbHeight))
+            scratch = AppKit.NSImage.alloc().initWithSize_(Foundation.NSMakeSize(thumbWidth, thumbHeight))
             scratch.lockFocus()
-            AppKit.NSGraphicsContext.currentContext().setImageInterpolation_(
-                AppKit.NSImageInterpolationHigh)
-            thumbRect = Foundation.NSMakeRect(0.0, 0.0, thumbWidth,
-                                              thumbHeight)
-            clipRect = Foundation.NSMakeRect(
-                0.0,
-                thumbHeight-options.clipheight,
-                options.clipwidth,
-                options.clipheight)
+            AppKit.NSGraphicsContext.currentContext().setImageInterpolation_(AppKit.NSImageInterpolationHigh)
+            thumbRect = Foundation.NSMakeRect(0.0, 0.0, thumbWidth, thumbHeight)
+            clipRect = Foundation.NSMakeRect(0.0, thumbHeight-options.clipheight, options.clipwidth, options.clipheight)
             bitmapdata.drawInRect_(thumbRect)
-            thumbOutput = AppKit.NSBitmapImageRep.alloc()\
-                .initWithFocusedViewRect_(thumbRect)
-            clipOutput = AppKit.NSBitmapImageRep.alloc()\
-                .initWithFocusedViewRect_(clipRect)
+            thumbOutput = AppKit.NSBitmapImageRep.alloc().initWithFocusedViewRect_(thumbRect)
+            clipOutput = AppKit.NSBitmapImageRep.alloc().initWithFocusedViewRect_(clipRect)
             scratch.unlockFocus()
 
             # save the thumbnails as pngs
             if options.thumb:
-                thumbOutput.representationUsingType_properties_(
-                    AppKit.NSPNGFileType, None).writeToFile_atomically_(
-                        filename + "-thumb.png", objc.YES)
+                thumbOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-thumb.png", objc.YES)
             if options.clipped:
-                clipOutput.representationUsingType_properties_(
-                    AppKit.NSPNGFileType, None).writeToFile_atomically_(
-                        filename + "-clipped.png", objc.YES)
+                clipOutput.representationUsingType_properties_(AppKit.NSPNGFileType, None).writeToFile_atomically_(filename + "-clipped.png", objc.YES)
 
     def getURL(self, webview):
         if self.urls:
@@ -166,26 +152,29 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
                 url = self.urls.pop(0)
         else:
             AppKit.NSApplication.sharedApplication().terminate_(None)
-        print "Fetching", url, "..."
+
+        nsurl = Foundation.NSURL.URLWithString_(url)
+        if not (nsurl and nsurl.scheme()):
+                nsurl = Foundation.NSURL.alloc().initFileURLWithPath_(url)
+        nsurl = nsurl.absoluteURL()
+
+        if self.options.ignore_ssl_check:
+            Foundation.NSURLRequest.setAllowsAnyHTTPSCertificate_forHost_(objc.YES, nsurl.host())
+
+        print "Fetching", nsurl, "..."
         self.resetWebview(webview)
-
         scriptobject = webview.windowScriptObject()
-        scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(),
-                                      'webkit2png')
+        scriptobject.setValue_forKey_(Webkit2PngScriptBridge.alloc().init(), 'webkit2png')
 
-        webview.mainFrame().loadRequest_(
-            Foundation.NSURLRequest.requestWithURL_(
-                Foundation.NSURL.URLWithString_(url)))
+        webview.mainFrame().loadRequest_(Foundation.NSURLRequest.requestWithURL_(nsurl))
         if not webview.mainFrame().provisionalDataSource():
             print " ... not a proper url?"
             self.getURL(webview)
 
     def resetWebview(self, webview):
-        rect = Foundation.NSMakeRect(0, 0, self.options.initWidth,
-                                     self.options.initHeight)
+        rect = Foundation.NSMakeRect(0, 0, self.options.initWidth, self.options.initHeight)
         window = webview.window()
-        window.setContentSize_((self.options.initWidth,
-                                self.options.initHeight))
+        window.setContentSize_((self.options.initWidth, self.options.initHeight))
 
         if self.options.transparent:
             window.setOpaque_(objc.NO)
@@ -197,19 +186,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
     def captureView(self, view):
         bounds = view.bounds()
         if bounds.size.height > self.options.UNSAFE_max_height:
-            print >> sys.stderr, "Error: page height greater than %s, " \
-                "clipping to avoid crashing windowserver." % \
-                self.options.UNSAFE_max_height
+            print >> sys.stderr, "Error: page height greater than %s, clipping to avoid crashing windowserver." % self.options.UNSAFE_max_height
             bounds.size.height = self.options.UNSAFE_max_height
         if bounds.size.width > self.options.UNSAFE_max_width:
-            print >> sys.stderr, "Error: page width greater than %s, " \
-                "clipping to avoid crashing windowserver." % \
-                self.options.UNSAFE_max_width
+            print >> sys.stderr, "Error: page width greater than %s, clipping to avoid crashing windowserver." % self.options.UNSAFE_max_width
             bounds.size.width = self.options.UNSAFE_max_width
 
         view.window().display()
-        view.window().setContentSize_(
-            Foundation.NSSize(bounds.size.width, self.options.initHeight))
+        view.window().setContentSize_(Foundation.NSSize(self.options.initWidth, self.options.initHeight))
         view.setFrame_(bounds)
 
         if hasattr(view, "bitmapImageRepForCachingDisplayInRect_"):
@@ -227,15 +211,14 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         # don't care about subframes
         if (frame == webview.mainFrame()):
             scriptobject = webview.windowScriptObject()
+
             if self.options.js:
                 scriptobject.evaluateWebScript_(self.options.js)
 
             bridge = scriptobject.valueForKey_('webkit2png')
 
             def doGrab():
-                Foundation.NSTimer.\
-                    scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-                        self.options.delay, self, self.doGrab, webview, False)
+                Foundation.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(self.options.delay, self, self.doGrab, webview, False)
 
             if bridge.is_stopped:
                 bridge.start_callback = doGrab
@@ -247,8 +230,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
         frame = webview.mainFrame()
         view = frame.frameView().documentView()
 
-        URL = webview.mainFrame().dataSource().initialRequest().URL()\
-            .absoluteString()
+        URL = webview.mainFrame().dataSource().initialRequest().URL().absoluteString()
         filename = self.makeFilename(URL, self.options)
 
         bitmapdata = self.captureView(view)
@@ -258,8 +240,7 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
             el = doc.querySelector_(self.options.selector)
 
             if not el:
-                print " ... no element matching %s found?" % \
-                    self.options.selector
+                print " ... no element matching %s found?" % self.options.selector
                 self.getURL(webview)
                 return
 
@@ -272,14 +253,10 @@ class WebkitLoad (Foundation.NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
             zoom = self.options.zoom
 
-            cropRect = Foundation.NSMakeRect(
-                zoom * left, zoom * top,
-                zoom * el.offsetWidth(), zoom * el.offsetHeight())
+            cropRect = view.window().convertRectToBacking_(Foundation.NSMakeRect(zoom * left, zoom * top, zoom * el.offsetWidth(), zoom * el.offsetHeight()))
 
-            cropped = Quartz.CGImageCreateWithImageInRect(
-                bitmapdata.CGImage(), cropRect)
-            bitmapdata = AppKit.NSBitmapImageRep.alloc().initWithCGImage_(
-                cropped)
+            cropped = Quartz.CGImageCreateWithImageInRect(bitmapdata.CGImage(), cropRect)
+            bitmapdata = AppKit.NSBitmapImageRep.alloc().initWithCGImage_(cropped)
             Quartz.CGImageRelease(cropped)
 
         self.saveImages(bitmapdata, filename, self.options)
@@ -300,10 +277,10 @@ Examples:
 %prog -TF http://google.com/        # just thumbnail and fullsize grab
 %prog -o foo http://google.com/     # save images as "foo-thumb.png" etc
 %prog -                             # screengrab urls from stdin
+%prog /path/to/file.html            # screengrab local html file
 %prog -h | less                     # full documentation"""
 
-    cmdparser = optparse.OptionParser(usage,
-                                      version=("webkit2png " + __version__))
+    cmdparser = optparse.OptionParser(usage, version=("webkit2png " + __version__))
     # TODO: add quiet/verbose options
     cmdparser.add_option("--debug", action="store_true",
                          help=optparse.SUPPRESS_HELP)
@@ -319,6 +296,8 @@ Examples:
                      help="page load timeout (default: 60)")
     group.add_option("--user-agent", type="string", default=False,
                      help="set user agent header")
+    group.add_option("--ignore-ssl-check", action="store_true", default=False,
+                     help="ignore SSL Certificate name mismatches")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Browser Window Options")
@@ -330,12 +309,10 @@ Examples:
         help="initial (and minimum) height of browser (default: 600)")
     group.add_option(
         "-z", "--zoom", type="float", default=1.0,
-        help='zoom level of browser, equivalent to "Zoom In" and "Zoom Out" '
-        'in "View" menu (default: 1.0)')
+        help='zoom level of browser, equivalent to "Zoom In" and "Zoom Out" in "View" menu (default: 1.0)')
     group.add_option(
         "--selector", type="string",
-        help="CSS selector for a single element to capture (first matching "
-        "element will be used)")
+        help="CSS selector for a single element to capture (first matching element will be used)")
     cmdparser.add_option_group(group)
 
     group = optparse.OptionGroup(cmdparser, "Output size options")
@@ -379,7 +356,7 @@ Examples:
     group = optparse.OptionGroup(cmdparser, "Web page functionality")
     group.add_option(
         "--delay", type="float", default=0,
-        help="delay between page load finishing and screenshot")
+        help="delay in seconds between page load finishing and screenshot")
     group.add_option(
         "--js", type="string", default=None,
         help="JavaScript to execute when the window finishes loading"
@@ -416,12 +393,10 @@ Examples:
 
     # deprecated options
     if options.nojs:
-        print >> sys.stderr, 'Warning: --nojs will be removed in ' \
-            'webkit2png 1.0. Please use --no-js.'
+        print >> sys.stderr, 'Warning: --nojs will be removed in webkit2png 1.0. Please use --no-js.'
         options.no_js = True
     if options.noimages:
-        print >> sys.stderr, 'Warning: --noimages will be removed in ' \
-            'webkit2png 1.0. Please use --no-images.'
+        print >> sys.stderr, 'Warning: --noimages will be removed in webkit2png 1.0. Please use --no-images.'
         options.no_images = True
 
     if options.scale == 0:
@@ -449,6 +424,9 @@ Examples:
     # Hide the dock icon (needs to run before NSApplication.sharedApplication)
     AppKit.NSBundle.mainBundle().infoDictionary()['LSBackgroundOnly'] = '1'
 
+    # Allow loading HTTP pages
+    AppKit.NSBundle.mainBundle().infoDictionary()['NSAppTransportSecurity'] = dict(NSAllowsArbitraryLoads = True)
+
     app = AppKit.NSApplication.sharedApplication()
 
     # create an app delegate
@@ -459,8 +437,7 @@ Examples:
     # create a window
     rect = Foundation.NSMakeRect(0, 0, 100, 100)
     win = AppKit.NSWindow.alloc()
-    win.initWithContentRect_styleMask_backing_defer_(
-        rect, AppKit.NSBorderlessWindowMask, 2, 0)
+    win.initWithContentRect_styleMask_backing_defer_(rect, AppKit.NSBorderlessWindowMask, 2, 0)
     if options.debug:
         win.orderFrontRegardless()
     # create a webview object
@@ -472,10 +449,8 @@ Examples:
     if options.user_agent:
         webview.setCustomUserAgent_(options.user_agent)
     else:
-        webkit_version = Foundation.NSBundle.bundleForClass_(WebKit.WebView)\
-            .objectForInfoDictionaryKey_(WebKit.kCFBundleVersionKey)[1:]
-        webview.setApplicationNameForUserAgent_(
-            "Safari/%s webkit2png/%s" % (webkit_version, __version__))
+        webkit_version = Foundation.NSBundle.bundleForClass_(WebKit.WebView).objectForInfoDictionaryKey_(WebKit.kCFBundleVersionKey)[1:]
+        webview.setApplicationNameForUserAgent_("Like-Version/6.0 Safari/%s webkit2png/%s" % (webkit_version, __version__))
     webview.setPreferencesIdentifier_('webkit2png')
     webview.preferences().setLoadsImagesAutomatically_(not options.no_images)
     webview.preferences().setJavaScriptEnabled_(not options.no_js)
